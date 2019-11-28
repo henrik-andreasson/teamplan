@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
+    <table class="table table-hover">
+      <tr>
+          <td>  {{ _('User') }} </td>
+          <td>  {{ _('Service') }}  </td>
+          <td>  {{ _('Status') }}  </td>
+          <td>  {{ _('Start') }} </td>
+          <td>  {{ _('Stop') }} </td>
+          <td>  {{ _('Edit') }} </td>
+      </tr>
+
+
+      {% for work in allwork %}
+      {% set user_link %}
+          <a href="{{ url_for('main.user', username=work.person.username) }}">
+              {{ work.person.username }}
+          </a>
+      {% endset %}
+      {% set service_link %}
+          <a href="{{ url_for('main.service', service=work.service) }}">
+              {{ work.service }}
+          </a>
+      {% endset %}
+
+      {% set work_link %}
+          <a href="{{ url_for('main.work_edit', work=work.id) }}">
+              {{ work.id }}
+          </a>
+      {% endset %}
+
+
+        <tr>
+            <td>  {{ work.username }} </td>
+            <td>  {{ work.service }}  </td>
+            <td>  {{ work.status }}  </td>
+            <td>  {{ work.start }} </td>
+            <td>  {{ work.stop }} </td>
+            <td>  {{ work_link }} </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Newer') }}
+                </a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    {{ _('Older') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <hr>
+    {% if form %}
+    {{ wtf.quick_form(form) }}
+    <br>
+    {% endif %}
+
+{% endblock %}

@@ -1,0 +1,27 @@
+<table class="table table-hover">
+    <tr>
+        <td>
+            {% set user_link %}
+                <a href="{{ url_for('main.user', username=work.person.username) }}">
+                    {{ work.person.username }}
+                </a>
+            {% endset %}
+            {% set service_link %}
+                <a href="{{ url_for('main.service', service=work.service) }}">
+                    {{ work.service }}
+                </a>
+            {% endset %}
+
+            {% set work_link %}
+                <a href="{{ url_for('main.work_edit', work=work.id) }}">
+                    {{ work.id }}
+                </a>
+            {% endset %}
+
+            {{ _('%(username)s will work at %(service)s from %(start)s to %(stop)s edit: %(work_link)s',
+                username=work.username, service=work.service, start=work.start,
+                stop=work.stop,work_link=work_link ) }}
+            <br>
+        </td>
+    </tr>
+</table>

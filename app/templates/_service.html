@@ -1,0 +1,13 @@
+{% set service_link %}
+    <a href="{{ url_for('main.service', name=service.name) }}">
+      {{ service.name }}
+    </a>
+{% endset %}
+
+<table class="table table-hover">
+    <tr>
+        <td>
+          {{ _('%(service)s', service=service_link ) }}
+        </td>
+    </tr>
+</table>
