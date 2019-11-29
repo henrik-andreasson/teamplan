@@ -1,0 +1,9 @@
+README
+
+build docker:
+
+    docker build -t templa  .
+
+Run docker:
+
+    docker run -it  --mount type=bind,source="$(pwd)",target=/teampla teampla bash

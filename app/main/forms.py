@@ -1,12 +1,13 @@
-from flask import request
+# from flask import request
 from flask_wtf import FlaskForm
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms import StringField, SubmitField, TextAreaField, SelectField
 from wtforms.fields.html5 import DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
-from app.models import User, Work, Service
+from app.models import User, Service
 from datetime import datetime
+
 
 class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), validators=[DataRequired()])
@@ -30,16 +31,18 @@ class PostForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
 
 
-
 class ServiceForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
 
+
 def FindUsers():
     return User.query.filter_by()
 
+
 def FindServices():
     return Service.query.filter_by()
+
 
 class WorkForm(FlaskForm):
 
@@ -48,9 +51,9 @@ class WorkForm(FlaskForm):
     service = QuerySelectField(query_factory=FindServices,
                                allow_blank=True, get_label='name')
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
-                ('unassigned', 'Unassigned'),
-                ('wants-out', 'Wants out'),
-                ('needs-out', 'Needs out')])
+                                                ('unassigned', 'Unassigned'),
+                                                ('wants-out', 'Wants out'),
+                                                ('needs-out', 'Needs out')])
     start = DateTimeField(_l('Start of work'),
                           validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                           default=datetime.now())

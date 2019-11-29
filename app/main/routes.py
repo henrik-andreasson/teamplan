@@ -1,14 +1,13 @@
 from datetime import datetime
 from flask import render_template, flash, redirect, url_for, request, g, \
-    jsonify, current_app
+    current_app
 from flask_login import current_user, login_required
 from flask_babel import _, get_locale
-from guess_language import guess_language
 from app import db
-from app.main.forms import EditProfileForm, PostForm, WorkForm, ServiceForm
+from app.main.forms import EditProfileForm, WorkForm, ServiceForm
 from app.models import User, Work, Service
-from app.translate import translate
 from app.main import bp
+
 
 @bp.before_app_request
 def before_request():
@@ -56,20 +55,21 @@ def explore():
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+    work = user.Work.order_by(Work.timestamp.desc()).paginate(
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.user', username=user.username,
-                       page=posts.next_num) if posts.has_next else None
+                       page=work.next_num) if work.has_next else None
     prev_url = url_for('main.user', username=user.username,
-                       page=posts.prev_num) if posts.has_prev else None
-    return render_template('user.html', user=user, posts=posts.items,
+                       page=work.prev_num) if work.has_prev else None
+    return render_template('user.html', user=user, work=work.items,
                            next_url=next_url, prev_url=prev_url)
+
 
 @bp.route('/service/', methods=['GET', 'POST'])
 @login_required
 def service():
 
-    form=ServiceForm()
+    form = ServiceForm()
 
     if form.validate_on_submit():
         service = Service(name=form.name.data)
@@ -86,8 +86,6 @@ def service():
     return render_template('service.html', form=form, services=services.items,
                            next_url=next_url, prev_url=prev_url)
 
-#    return render_template('service.html',form=form)
-
 
 @bp.route('/service_list/', methods=['GET', 'POST'])
 @login_required
@@ -99,8 +97,6 @@ def service_list():
     prev_url = url_for('main.service', page=services.prev_num) if services.has_prev else None
     return render_template('services.html', services=services.items,
                            next_url=next_url, prev_url=prev_url)
-
-
 
 
 @bp.route('/edit_profile', methods=['GET', 'POST'])
@@ -125,10 +121,10 @@ def edit_profile():
 def work_add():
     form = WorkForm()
     if form.validate_on_submit():
-#        service = Service.query.filter_by(name=form.service.data).first()
+
         work = Work(start=form.start.data,
-        stop=form.stop.data,username=form.username.data,
-        service=form.service.data,status=form.status.data) #,service_id=service.id
+                    stop=form.stop.data, username=form.username.data,
+                    service=form.service.data, status=form.status.data)
         db.session.add(work)
         db.session.commit()
         flash(_('New work is now posted!'))
@@ -136,7 +132,6 @@ def work_add():
 
     return render_template('index.html', title=_('Add Work'),
                            form=form)
-
 
 
 @bp.route('/work/edit/', methods=['GET', 'POST'])
@@ -147,7 +142,8 @@ def work_edit():
     work = Work.query.get(workid)
 
     if work is None:
-        internal_error()
+        return render_template('index.html', title=_('Edit Work'))
+# internal_error()
 
     form = WorkForm(formdata=request.form, obj=work)
 
@@ -159,4 +155,4 @@ def work_edit():
 
     else:
         return render_template('index.html', title=_('Edit Work'),
-                           form=form)
+                               form=form)
