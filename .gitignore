@@ -106,3 +106,4 @@ venv.bak/
 # app logs
 logs/
 migrations/
+app.db
