@@ -13,7 +13,6 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
-    mywork = db.relationship('Work', backref='person', lazy='dynamic')
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -54,16 +53,13 @@ def load_user(id):
 
 class Work(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(140))
-    username = db.Column(db.String(140))
-    updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    #user_id = db.Column(db.Integer, db.ForeignKey(User.id))
+    date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    username = db.Column(db.String(140))
     service = db.Column(db.String(140))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(140))
-#    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
-    language = db.Column(db.String(5))
 
     def __repr__(self):
         return '<Work {}>'.format(self.body)
@@ -73,7 +69,5 @@ class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(140))
     updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-#    work = db.relationship('Work', backref='service', lazy='dynamic')
-
     def __repr__(self):
         return '<Service {}>'.format(self.body)

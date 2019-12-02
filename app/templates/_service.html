@@ -1,5 +1,5 @@
 {% set service_link %}
-    <a href="{{ url_for('main.service', name=service.name) }}">
+    <a href="{{ url_for('main.service_edit', name=service.name) }}">
       {{ service.name }}
     </a>
 {% endset %}

@@ -8,6 +8,7 @@
           <td>  {{ _('User') }} </td>
           <td>  {{ _('Service') }}  </td>
           <td>  {{ _('Status') }}  </td>
+          <td>  {{ _('Date') }} </td>
           <td>  {{ _('Start') }} </td>
           <td>  {{ _('Stop') }} </td>
           <td>  {{ _('Edit') }} </td>
@@ -16,12 +17,12 @@
 
       {% for work in allwork %}
       {% set user_link %}
-          <a href="{{ url_for('main.user', username=work.person.username) }}">
-              {{ work.person.username }}
+          <a href="{{ url_for('main.work_list', username=work.username) }}">
+              {{ work.username }}
           </a>
       {% endset %}
       {% set service_link %}
-          <a href="{{ url_for('main.service', service=work.service) }}">
+          <a href="{{ url_for('main.work_list', service=work.service) }}">
               {{ work.service }}
           </a>
       {% endset %}
@@ -34,9 +35,10 @@
 
 
         <tr>
-            <td>  {{ work.username }} </td>
-            <td>  {{ work.service }}  </td>
+            <td>  {{ user_link }}  </td>
+            <td>  {{ service_link }}  </td>
             <td>  {{ work.status }}  </td>
+            <td>  {{ work.date }} </td>
             <td>  {{ work.start }} </td>
             <td>  {{ work.stop }} </td>
             <td>  {{ work_link }} </td>

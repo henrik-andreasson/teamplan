@@ -2,18 +2,18 @@
     <tr>
         <td>
             {% set user_link %}
-                <a href="{{ url_for('main.user', username=work.person.username) }}">
-                    {{ work.person.username }}
+                <a href="{{ url_for('main.user', username=work.username) }}">
+                    {{ work.username }}
                 </a>
             {% endset %}
             {% set service_link %}
-                <a href="{{ url_for('main.service', service=work.service) }}">
+                <a href="{{ url_for('main.service_list', service=work.service) }}">
                     {{ work.service }}
                 </a>
             {% endset %}
 
             {% set work_link %}
-                <a href="{{ url_for('main.work_edit', work=work.id) }}">
+                <a href="{{ url_for('main.work_edit', id=work.id) }}">
                     {{ work.id }}
                 </a>
             {% endset %}

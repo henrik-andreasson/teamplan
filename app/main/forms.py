@@ -1,12 +1,12 @@
-# from flask import request
+from flask import request
 from flask_wtf import FlaskForm
-from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms import StringField, SubmitField, TextAreaField, SelectField
+from wtforms_components import TimeField
 from wtforms.fields.html5 import DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
-from app.models import User, Service
-from datetime import datetime
+from app.models import User, Work, Service
+from datetime import datetime, time
 
 
 class EditProfileForm(FlaskForm):
@@ -36,28 +36,20 @@ class ServiceForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
 
 
-def FindUsers():
-    return User.query.filter_by()
-
-
-def FindServices():
-    return Service.query.filter_by()
-
-
 class WorkForm(FlaskForm):
-
-    username = QuerySelectField(query_factory=FindUsers,
-                                allow_blank=True, get_label='username')
-    service = QuerySelectField(query_factory=FindServices,
-                               allow_blank=True, get_label='name')
+    username = SelectField(_l('Username'))
+    service = SelectField(_l('service'), validators=[DataRequired()])
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned'),
                                                 ('wants-out', 'Wants out'),
                                                 ('needs-out', 'Needs out')])
-    start = DateTimeField(_l('Start of work'),
-                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
-                          default=datetime.now())
-    stop = DateTimeField(_l('End of work'),
-                         validators=[DataRequired()], format='%Y-%m-%d %H:%M',
+    date = DateTimeField(_l('Date of work'),
+                         validators=[DataRequired()], format='%Y-%m-%d',
                          default=datetime.now())
+    start = TimeField(_l('Start of work'),
+                         validators=[DataRequired()], format='%H:%M',
+                         default=time(8,0))
+    stop = TimeField(_l('End of work'),
+                         validators=[DataRequired()], format='%H:%M',
+                         default=time(12,30))
     submit = SubmitField(_l('Submit'))
