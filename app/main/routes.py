@@ -9,7 +9,10 @@ from app.main.forms import EditProfileForm, WorkForm, ServiceForm
 from app.models import User, Work, Service
 # from app.translate import translate
 from app.main import bp
-# import pprint
+from calendar import Calendar, monthrange
+from datetime import date, datetime, timedelta
+from sqlalchemy import func
+import pprint
 
 
 @bp.before_app_request
@@ -24,17 +27,51 @@ def before_request():
 @bp.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
+    today = datetime.utcnow()
+    output_month = []
 
-    page = request.args.get('page', 1, type=int)
-    work = Work.query.order_by(Work.start.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('main.index', page=work.next_num) \
-        if work.has_next else None
-    prev_url = url_for('main.index', page=work.prev_num) \
-        if work.has_prev else None
-    return render_template('work.html', title=_('Work'),
-                           allwork=work.items, next_url=next_url,
-                           prev_url=prev_url)
+    calendar = Calendar().monthdayscalendar(today.year, today.month)
+    display_month = '{:02d}'.format(today.month)
+    display_year = '{:02d}'.format(today.year)
+
+    mon_week = 0
+    for week in calendar:
+        mon_week = mon_week + 1
+        print ("week: %s" % mon_week)
+        output_week = []
+        weekday = 0
+        for day in week:
+            print ("day: %s" % day)
+            weekday = weekday + 1
+
+            day_info = {}
+            if day != 0:
+                display_day = '{:02d}'.format(day)
+                day_info = {'display_day': display_day}
+
+                date_min = "%s-%s-%s 00:00:00" % (display_year, display_month,
+                                                  display_day)
+                date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
+                                                  display_day)
+                print("search for work: %s %s" % (date_min, date_max))
+                work = Work.query.filter(func.datetime(Work.start) > date_min,
+                                         func.datetime(Work.stop) < date_max).all()
+
+                day_info['work'] = work
+
+            output_week.insert(weekday, day_info)
+
+        output_month.insert(mon_week, output_week)
+
+#        pp = pprint.PrettyPrinter(indent=4)
+#        pp.pprint(output_month)
+
+        # for x_week in output_month:
+        #     print("new week:")
+        #     for x_day in x_week:
+        #         print("day: %s" % x_day)
+
+    return render_template('month.html', title=_('Month'), month=output_month)
 
 
 @bp.route('/explore')
@@ -151,13 +188,14 @@ def edit_profile():
 def work_add():
     form = WorkForm()
 
-    form.username.choices = [(u.username, u.username) for u in User.query.all()]
+    form.username.choices = [(u.username, u.username)
+                             for u in User.query.all()]
+
     form.service.choices = [(s.name, s.name) for s in Service.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
         work = Work(start=form.start.data,
                     stop=form.stop.data,
-                    date=form.date.data,
                     username=form.username.data,
                     service=form.service.data,
                     status=form.status.data)
@@ -181,7 +219,8 @@ def work_edit():
         render_template('service.html', title=_('Work is not defined'))
 
     form = WorkForm(formdata=request.form, obj=work)
-    form.username.choices = [(u.username, u.username) for u in User.query.all()]
+    form.username.choices = [(u.username, u.username)
+                             for u in User.query.all()]
     form.service.choices = [(s.name, s.name) for s in Service.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -210,13 +249,18 @@ def work_list():
         work = Work.query.filter_by(service=service).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     else:
-        work = Work.query.order_by(Work.start).paginate(
+        work = Work.query.order_by(Work.date).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
     next_url = url_for('main.index', page=work.next_num) \
         if work.has_next else None
     prev_url = url_for('main.index', page=work.prev_num) \
         if work.has_prev else None
+
+    for i in work.items:
+        i.start = i.start.strftime("%H:%M")
+        i.stop = i.stop.strftime("%H:%M")
+
     return render_template('work.html', title=_('Work'),
                            allwork=work.items, next_url=next_url,
                            prev_url=prev_url)

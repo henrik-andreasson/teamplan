@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
+    <table class="table table-hover">
+      <tr>
+          <td>  {{ _('Monday') }} </td>
+          <td>  {{ _('Tuesday') }}  </td>
+          <td>  {{ _('Wednesday') }}  </td>
+          <td>  {{ _('Thursday') }} </td>
+          <td>  {{ _('Friday') }} </td>
+          <td>  {{ _('Saturday') }} </td>
+          <td>  {{ _('Sunday') }} </td>
+      </tr>
+
+      {% for week in month %}
+        <tr>
+          {% for day in week %}
+            <td>  {{ day['display_day'] }}
+              {% for wrk in day['work'] %}
+              {{ _('%(username)s @ %(service)s <br/>',
+                    username=wrk.username, service=wrk.service) }}
+
+              {% endfor %}
+            </td>
+          {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+
+{% endblock %}
