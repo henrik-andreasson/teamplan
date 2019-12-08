@@ -1,6 +1,5 @@
-from datetime import datetime
 from flask import render_template, flash, redirect, url_for, request, g, \
-    jsonify, current_app
+    current_app
 from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 # from guess_language import guess_language
@@ -9,10 +8,9 @@ from app.main.forms import EditProfileForm, WorkForm, ServiceForm
 from app.models import User, Work, Service
 # from app.translate import translate
 from app.main import bp
-from calendar import Calendar, monthrange
-from datetime import date, datetime, timedelta
+from calendar import Calendar
+from datetime import datetime
 from sqlalchemy import func
-import pprint
 
 
 @bp.before_app_request
@@ -62,14 +60,6 @@ def index():
             output_week.insert(weekday, day_info)
 
         output_month.insert(mon_week, output_week)
-
-#        pp = pprint.PrettyPrinter(indent=4)
-#        pp.pprint(output_month)
-
-        # for x_week in output_month:
-        #     print("new week:")
-        #     for x_day in x_week:
-        #         print("day: %s" % x_day)
 
     return render_template('month.html', title=_('Month'), month=output_month)
 
