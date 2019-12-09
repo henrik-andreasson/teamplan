@@ -129,6 +129,7 @@ class Work(PaginatedAPIMixin, db.Model):
     username = db.Column(db.String(140))
     service = db.Column(db.String(140))
     status = db.Column(db.String(140))
+    color = db.Column(db.String(140))
 
     def __repr__(self):
         return '<Work {}>'.format(self.body)
@@ -136,8 +137,8 @@ class Work(PaginatedAPIMixin, db.Model):
     def to_dict(self, include_email=False):
         data = {
             'id': self.id,
-            'start': self.start.isoformat() + 'Z',
-            'stop': self.stop.isoformat() + 'Z',
+            'start': self.start,
+            'stop': self.stop,
             'username': self.username,
             'service': self.service,
             'status': self.status,
@@ -149,7 +150,7 @@ class Work(PaginatedAPIMixin, db.Model):
         for field in ['username', 'start', 'stop', 'service', 'status']:
             if field in data:
                 if field == "start" or field == "stop":
-                    date = datetime.fromisoformat(data[field])
+                    date = datetime.strptime(data[field], "%Y-%m-%d %H:%M")
                     setattr(self, field, date)
                 else:
                     setattr(self, field, data[field])

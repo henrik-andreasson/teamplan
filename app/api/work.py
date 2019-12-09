@@ -1,12 +1,13 @@
 from app.api import bp
 from flask import jsonify
-from app.models import Work, User
+from app.models import Work, User, Service
 from flask import url_for
 from app import db
 from app.api.errors import bad_request
 from flask import request
-from flask import g, abort
+# from flask import g, abort
 from app.api.auth import token_auth
+
 
 @bp.route('/work', methods=['POST'])
 def create_work():
@@ -18,7 +19,10 @@ def create_work():
     work = Work()
     work.from_dict(data, new_work=True)
     if 'status' not in data:
-        work.status="unassigned"
+        work.status = "unassigned"
+
+    service = Service.query.filter_by(name=data['service']).first()
+    work.color = service.color
 
     db.session.add(work)
     db.session.commit()

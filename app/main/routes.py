@@ -60,7 +60,6 @@ def index():
             output_week.insert(weekday, day_info)
 
         output_month.insert(mon_week, output_week)
-
     return render_template('month.html', title=_('Month'), month=output_month)
 
 
@@ -126,7 +125,6 @@ def service_edit():
     servicename = request.args.get('name')
     print("id: %s" % servicename)
     service = Service.query.filter_by(name=servicename).first()
-#    service = Service.query.get(name==servicename)
 
     if service is None:
         render_template('service.html', title=_('Service is not defined'))
@@ -184,10 +182,12 @@ def work_add():
     form.service.choices = [(s.name, s.name) for s in Service.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
+        service = Service.query.filter_by(name=form.service.data).first()
         work = Work(start=form.start.data,
                     stop=form.stop.data,
                     username=form.username.data,
                     service=form.service.data,
+                    color=service.color,
                     status=form.status.data)
         db.session.add(work)
         db.session.commit()

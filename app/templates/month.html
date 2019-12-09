@@ -19,7 +19,7 @@
           {% for day in week %}
             <td>  {{ day['display_day'] }}
               {% for wrk in day['work'] %}
-              <div style="background: #3333ff">
+              <div style="background: {{wrk.color}}">
                 {{ _('%(username)s @ %(service)s <br/>',
                     username=wrk.username, service=wrk.service) }}
               </div>
