@@ -14,6 +14,6 @@ RUN pip3 install flask-sqlalchemy flask-migrate flask-login flask-mail \
 # Make port 8000 available to the world outside this container
 EXPOSE 5000
 
-ENV FLASK_APP=templa.py
+ENV FLASK_APP=teampla.py
 # Run flask when the container launches
 CMD [ "flask run --host=0.0.0.0"]
