@@ -35,11 +35,11 @@ def index():
     mon_week = 0
     for week in calendar:
         mon_week = mon_week + 1
-        print ("week: %s" % mon_week)
+#        print ("week: %s" % mon_week)
         output_week = []
         weekday = 0
         for day in week:
-            print ("day: %s" % day)
+#            print ("day: %s" % day)
             weekday = weekday + 1
 
             day_info = {}
@@ -51,7 +51,7 @@ def index():
                                                   display_day)
                 date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
                                                   display_day)
-                print("search for work: %s %s" % (date_min, date_max))
+#                print("search for work: %s %s" % (date_min, date_max))
                 work = Work.query.filter(func.datetime(Work.start) > date_min,
                                          func.datetime(Work.stop) < date_max).all()
 

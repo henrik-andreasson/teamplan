@@ -2,8 +2,8 @@ README
 
 build docker:
 
-    docker build -t templa  .
+    docker build -t teamplan  .
 
 Run docker:
 
-    docker run -it  --mount type=bind,source="$(pwd)",target=/teampla teampla bash
+    docker run -p5000:5000 -it  --mount type=bind,source="$(pwd)",target=/teamplan teamplan bash
