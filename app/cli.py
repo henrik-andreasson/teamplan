@@ -1,35 +1,43 @@
+from flask import current_app
 import os
 import click
+from pprint import pprint
+from rocketchat_API.rocketchat import RocketChat
+from app.models import User, Work, Service
+from calendar import Calendar
+from datetime import datetime
+from sqlalchemy import func
+import time
 
 
 def register(app):
     @app.cli.group()
-    def translate():
-        """Translation and localization commands."""
+    def chat():
+        """chat commands."""
         pass
 
-    @translate.command()
-    @click.argument('lang')
-    def init(lang):
-        """Initialize a new language."""
-        if os.system('pybabel extract -F babel.cfg -k _l -o messages.pot .'):
-            raise RuntimeError('extract command failed')
-        if os.system(
-                'pybabel init -i messages.pot -d app/translations -l ' + lang):
-            raise RuntimeError('init command failed')
-        os.remove('messages.pot')
+    @chat.command()
+    @click.argument('start')
+    @click.argument('stop')
+    def send(start, stop):
+        """send who works today."""
+        print("start: %s stop: %s" % (start,stop))
+        today = datetime.utcnow()
 
-    @translate.command()
-    def update():
-        """Update all languages."""
-        if os.system('pybabel extract -F babel.cfg -k _l -o messages.pot .'):
-            raise RuntimeError('extract command failed')
-        if os.system('pybabel update -i messages.pot -d app/translations'):
-            raise RuntimeError('update command failed')
-        os.remove('messages.pot')
+        display_month = '{:02d}'.format(today.month)
+        display_year = '{:02d}'.format(today.year)
+        display_day = '{:02d}'.format(today.day)
 
-    @translate.command()
-    def compile():
-        """Compile all languages."""
-        if os.system('pybabel compile -d app/translations'):
-            raise RuntimeError('compile command failed')
+        # date_min = "%s-%s-%s 00:00" % (display_year, display_month,
+        #                                   display_day)
+        # date_max = "%s-%s-%s 12:31" % (display_year, display_month,
+        #                                   display_day)
+
+        work = Work.query.filter(func.datetime(Work.start) > start,
+                                 func.datetime(Work.stop) < stop).all()
+
+        rocket = RocketChat(current_app.config['ROCKET_USER'], current_app.config['ROCKET_PASS'], server_url=current_app.config['ROCKET_URL'])
+
+        for w in work:
+            pprint(rocket.chat_post_message('today: %s\t%s\t%s\t@%s ' % (w.start,w.stop,w.service,w.username), channel=current_app.config['ROCKET_CHANNEL']).json())
+            time.sleep(1)
