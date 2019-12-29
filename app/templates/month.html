@@ -3,6 +3,73 @@
 
 {% block app_content %}
     <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
+
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span>
+                    {{ _('Previous Month') }} {{ month_info['prev'] }}
+                </a>
+            </li>
+            <li>
+              <span aria-hidden="true">
+                {{ month_info['this'] }}
+               </span>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    {{ _('Next Month') }} {{ month_info['next'] }}
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+
+    <table class="table table-hover">
+      <tr>
+        <td>
+            {{ _('Users') }}
+        </td>
+        <td>
+          <a href="{{ url_for('main.index') }}">
+            {{ _('Everybody') }}    </a>
+        </td>
+
+    {% for user in users %}
+
+      {% set user_link %}
+        <a href="{{ url_for('main.index', username=user.username) }}">
+          {{ user.username }}
+        </a>
+      {% endset %}
+
+        <td>    {{ user_link }}          </td>
+
+    {% endfor %}
+      </tr>
+      <tr>
+        <td>
+            {{ _('Services') }}
+        </td>
+
+    {% for service in services %}
+
+      {% set service_link %}
+        <a href="{{ url_for('main.index', service=service.name) }}">
+          {{ service.name }}
+        </a>
+      {% endset %}
+              <td>
+                <div style="background: {{service.color}}">
+                  {{ service_link }}
+                </div>
+              </td>
+    {% endfor %}
+      </tr>
+
+    </table>
     <table class="table table-hover">
       <tr>
           <td>  {{ _('Monday') }} </td>
@@ -19,9 +86,21 @@
           {% for day in week %}
             <td>  {{ day['display_day'] }}
               {% for wrk in day['work'] %}
+
+              {% set edit_link %}
+                  <a href="{{ url_for('main.work_edit', work=wrk.id) }}">
+                    {{ _('edit')}}
+                  </a>
+              {% endset %}
+
+
               <div style="background: {{wrk.color}}">
-                {{ _('%(username)s @ %(service)s <br/>',
+                {{ _('%(username)s @ %(service)s ',
                     username=wrk.username, service=wrk.service) }}
+                {% if wrk.status != "assigned" %}
+                  {{ edit_link }}
+                {% endif %}
+                <br/>
               </div>
               {% endfor %}
             </td>
@@ -29,5 +108,36 @@
       </tr>
       {% endfor %}
     </table>
+
+
+    <h2>stats</h2>
+    <table class="table table-hover">
+      <tr>
+        <td>    {{_('Username')}}          </td>
+        {% for service in services %}
+          <td>    {{ service.name }}          </td>
+        {% endfor %}
+        <td>    {{_('Total work')}}          </td>
+      </tr>
+
+
+    {% for stat_user in stats %}
+      <tr>
+        <td>    {{ stat_user['username'] }}          </td>
+
+        {% for service in services %}
+
+
+          <td>
+            <div style="background: {{service.color}}">
+             {{ stat_user[service.name] }}
+            </<div>
+          </td>
+        {% endfor %}
+        <td>    {{ stat_user['user_all_work'] }}          </td>
+
+    {% endfor %}
+      </tr>
+
 
 {% endblock %}

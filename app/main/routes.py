@@ -11,6 +11,7 @@ from app.main import bp
 from calendar import Calendar
 from datetime import datetime
 from sqlalchemy import func
+from dateutil import relativedelta
 
 
 @bp.before_app_request
@@ -20,13 +21,52 @@ def before_request():
         db.session.commit()
     g.locale = str(get_locale())
 
+def service_stat_month(month,service=None,user=None):
+
+    if user is None:
+        users = User.query.order_by(User.username.desc())
+    else:
+        users = User.query.filter(User.username==user)
+
+    if service is None:
+        services = Service.query.order_by(Service.name.desc())
+    else:
+        services = Service.query.filter(Service.name==service)
+
+    stats=[]
+    for u in users:
+        stat_user={}
+        stat_user['username']=u.username
+        user_all_work=0
+        for s in services:
+# todo calc stats for not all work, just the selected month
+            stat_user[s.name] = Work.query.filter(Work.username == u.username,
+                                             Work.service == s.name).with_entities(func.count()).scalar()
+            user_all_work += stat_user[s.name]
+        stat_user['user_all_work']=user_all_work
+        if user_all_work > 0:
+            stats.append(stat_user)
+    return stats
 
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
-    today = datetime.utcnow()
     output_month = []
+
+    users = User.query.all()
+    services = Service.query.all()
+    username = request.args.get('username')
+    service = request.args.get('service')
+    month = request.args.get('month')
+
+    if month is None:
+        today = datetime.utcnow()
+    else:
+        today = datetime.strptime(month, "%Y-%m")
+
+    next_month = today + relativedelta.relativedelta(months=1)
+    prev_month = today + relativedelta.relativedelta(months=-1)
 
     calendar = Calendar().monthdayscalendar(today.year, today.month)
     display_month = '{:02d}'.format(today.month)
@@ -35,11 +75,9 @@ def index():
     mon_week = 0
     for week in calendar:
         mon_week = mon_week + 1
-#        print ("week: %s" % mon_week)
         output_week = []
         weekday = 0
         for day in week:
-#            print ("day: %s" % day)
             weekday = weekday + 1
 
             day_info = {}
@@ -51,16 +89,39 @@ def index():
                                                   display_day)
                 date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
                                                   display_day)
-#                print("search for work: %s %s" % (date_min, date_max))
-                work = Work.query.filter(func.datetime(Work.start) > date_min,
-                                         func.datetime(Work.stop) < date_max).all()
+                if service is not None:
+                    work = Work.query.filter(Work.service == service,
+                                            func.datetime(Work.start) > date_min,
+                                            func.datetime(Work.stop) < date_max).all()
+                elif username is not None:
+                    work = Work.query.filter(Work.username == username,
+                                            func.datetime(Work.start) > date_min,
+                                            func.datetime(Work.stop) < date_max).all()
+                else:
+                    work = Work.query.filter(func.datetime(Work.start) > date_min,
+                                func.datetime(Work.stop) < date_max).all()
 
                 day_info['work'] = work
 
             output_week.insert(weekday, day_info)
 
         output_month.insert(mon_week, output_week)
-    return render_template('month.html', title=_('Month'), month=output_month)
+
+    month_info = {}
+    month_info['prev'] = prev_month.strftime("%b")
+    month_info['this'] = today.strftime("%Y %B")
+    month_info['next'] = next_month.strftime("%b")
+    next_url = url_for('main.index', month=next_month.strftime("%Y-%m"))
+    prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
+
+
+    stats=service_stat_month(today.month,service,username)
+    return render_template('month.html', title=_('Month'), month=output_month,
+                           users=users, services=services, stats=stats,
+                           month_info=month_info, next_url=next_url,
+                           prev_url=prev_url)
+
+
 
 
 @bp.route('/explore')
