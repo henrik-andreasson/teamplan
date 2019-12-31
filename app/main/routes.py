@@ -62,16 +62,17 @@ def index():
     month = request.args.get('month')
 
     if month is None:
-        today = datetime.utcnow()
+        selected_month = datetime.utcnow()
     else:
-        today = datetime.strptime(month, "%Y-%m")
+        selected_month = datetime.strptime(month, "%Y-%m")
 
-    next_month = today + relativedelta.relativedelta(months=1)
-    prev_month = today + relativedelta.relativedelta(months=-1)
+    print("selected month: %s" % selected_month)
+    next_month = selected_month + relativedelta.relativedelta(months=1)
+    prev_month = selected_month + relativedelta.relativedelta(months=-1)
 
-    calendar = Calendar().monthdayscalendar(today.year, today.month)
-    display_month = '{:02d}'.format(today.month)
-    display_year = '{:02d}'.format(today.year)
+    calendar = Calendar().monthdayscalendar(selected_month.year, selected_month.month)
+    display_month = '{:02d}'.format(selected_month.month)
+    display_year = '{:02d}'.format(selected_month.year)
 
     mon_week = 0
     for week in calendar:
@@ -108,21 +109,21 @@ def index():
 
         output_month.insert(mon_week, output_week)
 
+    month_str = selected_month.strftime("%Y-%m")
+
     month_info = {}
     month_info['prev'] = prev_month.strftime("%b")
-    month_info['this'] = today.strftime("%Y %B")
+    month_info['this'] = selected_month.strftime("%Y %B")
     month_info['next'] = next_month.strftime("%b")
     next_url = url_for('main.index', month=next_month.strftime("%Y-%m"))
     prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
 
-
-    stats=service_stat_month(today.month,service,username)
+    print("selected month: %s" % selected_month)
+    stats=service_stat_month(selected_month.month,service,username)
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
-                           prev_url=prev_url)
-
-
+                           prev_url=prev_url, selected_month=month_str)
 
 
 @bp.route('/explore')
