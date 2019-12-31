@@ -12,6 +12,7 @@ from calendar import Calendar
 from datetime import datetime
 from sqlalchemy import func
 from dateutil import relativedelta
+from rocketchat_API.rocketchat import RocketChat
 
 
 @bp.before_app_request
@@ -253,6 +254,9 @@ def work_add():
         db.session.add(work)
         db.session.commit()
         flash(_('New work is now posted!'))
+        rocket = RocketChat(current_app.config['ROCKET_USER'], current_app.config['ROCKET_PASS'], server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('new work: %s\t%s\t%s\t@%s ' % (work.start,work.stop,work.service,work.username), channel=current_app.config['ROCKET_CHANNEL']).json()
+
         return redirect(url_for('main.index'))
     else:
         return render_template('work.html', title=_('Add Work'),
@@ -265,6 +269,7 @@ def work_edit():
 
     workid = request.args.get('work')
     work = Work.query.get(workid)
+    oldwork = work
 
     if work is None:
         render_template('service.html', title=_('Work is not defined'))
@@ -278,6 +283,9 @@ def work_edit():
         form.populate_obj(work)
         db.session.commit()
         flash(_('Your changes have been saved.'))
+        rocket = RocketChat(current_app.config['ROCKET_USER'], current_app.config['ROCKET_PASS'], server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('edit of work from: \n%s\t%s\t%s\t@%s\nto: \n%s\t%s\t%s\t@%s ' % (oldwork.start,oldwork.stop,oldwork.service,oldwork.username,work.start,work.stop,work.service,work.username), channel=current_app.config['ROCKET_CHANNEL']).json()
+
         return redirect(url_for('main.index'))
 
     else:

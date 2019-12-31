@@ -1,5 +1,5 @@
 from app.api import bp
-from flask import jsonify
+from flask import jsonify, current_app
 from app.models import Work, User, Service
 from flask import url_for
 from app import db
@@ -7,6 +7,8 @@ from app.api.errors import bad_request
 from flask import request
 # from flask import g, abort
 from app.api.auth import token_auth
+from pprint import pprint
+from rocketchat_API.rocketchat import RocketChat
 
 
 @bp.route('/work', methods=['POST'])
@@ -27,6 +29,10 @@ def create_work():
     db.session.add(work)
     db.session.commit()
     response = jsonify(work.to_dict())
+    rocket = RocketChat(current_app.config['ROCKET_USER'], current_app.config['ROCKET_PASS'], server_url=current_app.config['ROCKET_URL'])
+    rocket.chat_post_message('new work: %s\t%s\t%s\t@%s ' % (work.start,work.stop,work.service,work.username), channel=current_app.config['ROCKET_CHANNEL']).json()
+
+
     response.status_code = 201
     response.headers['Location'] = url_for('api.get_work', id=work.id)
     return response

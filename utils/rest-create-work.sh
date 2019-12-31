@@ -26,4 +26,6 @@ for day in $(cat $days) ; do
     start="$day 12:30" stop="$day 17:00" username="$work_user" \
     "Authorization:Bearer $token"
 
+  sleep 1
+
 done

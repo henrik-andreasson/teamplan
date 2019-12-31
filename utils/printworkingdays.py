@@ -2,8 +2,8 @@
 # tested with Python24    vegaseat     01feb2007
 import calendar
 # change these values to your needs ...
-year = 2019
-month = 12     # jan=1
+year = 2020
+month = 1     # jan=1
 # makes Monday first day of week (this is the default)
 calendar.setfirstweekday(calendar.MONDAY)
 months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
