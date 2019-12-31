@@ -33,14 +33,14 @@
             {{ _('Users') }}
         </td>
         <td>
-          <a href="{{ url_for('main.index') }}">
+          <a href="{{ url_for('main.index', month=selected_month)}}">
             {{ _('Everybody') }}    </a>
         </td>
 
     {% for user in users %}
 
       {% set user_link %}
-        <a href="{{ url_for('main.index', username=user.username) }}">
+        <a href="{{ url_for('main.index', month=selected_month, username=user.username) }}">
           {{ user.username }}
         </a>
       {% endset %}
@@ -57,7 +57,7 @@
     {% for service in services %}
 
       {% set service_link %}
-        <a href="{{ url_for('main.index', service=service.name) }}">
+        <a href="{{ url_for('main.index', month=selected_month, service=service.name) }}">
           {{ service.name }}
         </a>
       {% endset %}

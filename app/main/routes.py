@@ -34,15 +34,27 @@ def service_stat_month(month,service=None,user=None):
     else:
         services = Service.query.filter(Service.name==service)
 
+    next_month = month + relativedelta.relativedelta(months=1)
+    start_year = '{:02d}'.format(month.year)
+    start_month = '{:02d}'.format(month.month)
+
+    stop_year = '{:02d}'.format(next_month.year)
+    stop_month = '{:02d}'.format(next_month.month)
+
+    date_start = "%s-%s-01 00:00:00" % (start_year, start_month)
+    date_stop = "%s-%s-01 00:00:00" % (stop_year, stop_month)
     stats=[]
     for u in users:
         stat_user={}
         stat_user['username']=u.username
         user_all_work=0
         for s in services:
-# todo calc stats for not all work, just the selected month
-            stat_user[s.name] = Work.query.filter(Work.username == u.username,
-                                             Work.service == s.name).with_entities(func.count()).scalar()
+            print("u: %s w: %s s: %s" % (u.username,s.name,user_all_work))
+            stat_user[s.name] = Work.query.filter(Work.service == s.name,
+                                                  Work.username == u.username,
+                                                  func.datetime(Work.start) > date_start,
+                                                  func.datetime(Work.stop) < date_stop).with_entities(func.count()).scalar()
+
             user_all_work += stat_user[s.name]
         stat_user['user_all_work']=user_all_work
         if user_all_work > 0:
@@ -119,7 +131,7 @@ def index():
     prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
 
     print("selected month: %s" % selected_month)
-    stats=service_stat_month(selected_month.month,service,username)
+    stats=service_stat_month(selected_month,service,username)
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
