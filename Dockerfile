@@ -5,7 +5,7 @@ FROM centos:latest
 WORKDIR /teamplan
 
 # Install any needed packages
-RUN yum install -y python3 
+RUN yum install -y python3 sqlite
 
 RUN pip3 install flask-sqlalchemy flask-migrate flask-login flask-mail \
   flask-bootstrap flask-moment flask-babel python-dotenv jwt flask-wtf \
