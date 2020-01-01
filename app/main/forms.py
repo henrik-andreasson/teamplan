@@ -1,12 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, SelectField
-# from wtforms_components import TimeField
-from wtforms.fields.html5 import DateTimeField
+from wtforms.fields.html5 import DateField, DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
 from app.models import User
 from datetime import datetime
-
 
 class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), validators=[DataRequired()])
@@ -44,4 +42,15 @@ class WorkForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+
+class AbsenseForm(FlaskForm):
+    username = SelectField(_l('Username'))
+    status = SelectField(_l('Status'), choices=[('requested', 'Requested'),
+                                                ('approved', 'Approved'),
+                                                ('denied', 'Denied')])
+    start = DateTimeField(_l('Start absense'), validators=[DataRequired()],
+                          format='%Y-%m-%d %H:%M',default=datetime.now())
+    stop = DateTimeField(_l('Stop absense'),
+                         validators=[DataRequired()], format='%Y-%m-%d %H:%M',
+                         default=datetime.now())
     submit = SubmitField(_l('Submit'))
