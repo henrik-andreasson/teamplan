@@ -164,3 +164,13 @@ class Service(db.Model):
 
     def __repr__(self):
         return '<Service {}>'.format(self.body)
+
+class Absense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    username = db.Column(db.String(140))
+    status = db.Column(db.String(140))
+
+    def __repr__(self):
+        return '<Work {}>'.format(self.body)

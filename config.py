@@ -22,5 +22,6 @@ class Config(object):
     ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
     ROCKET_USER=os.environ.get('ROCKET_USER') or 'teamplan'
     ROCKET_PASS=os.environ.get('ROCKET_PASS') or 'foo123'
-    ROCKET_URL=os.environ.get('ROCKET_URL') or 'http://172.17.0.3:3000'
+    ROCKET_URL=os.environ.get('ROCKET_URL') or 'http://172.17.0.4:3000'
     ROCKET_CHANNEL=os.environ.get('ROCKET_CHANNEL') or 'GENERAL'
+    ABSENSE_COLOR="#446600"

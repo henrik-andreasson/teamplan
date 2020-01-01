@@ -44,3 +44,4 @@ class WorkForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+    submit = SubmitField(_l('Submit'))

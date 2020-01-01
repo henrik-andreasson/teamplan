@@ -68,5 +68,8 @@ http POST http://localhost:5000/api/users username=cl password=foo123 \
 http POST http://localhost:5000/api/users username=aj password=foo123 \
     email=aj@certificateservices.se "about_me=well certs and stuff!"
 
-http POST http://localhost:5000/api/users username=lu password=foo123 \
-    email=lu@certificateservices.se "about_me=well certs and stuff!"
+http POST http://localhost:5000/api/users username=es password=foo123 \
+    email=es@certificateservices.se "about_me=well certs and stuff!"
+
+http POST http://localhost:5000/api/users username=jw password=foo123 \
+    email=jw@certificateservices.se "about_me=well certs and stuff!"
