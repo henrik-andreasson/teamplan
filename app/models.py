@@ -173,4 +173,17 @@ class Absense(db.Model):
     status = db.Column(db.String(140))
 
     def __repr__(self):
-        return '<Work {}>'.format(self.body)
+        return '<Absense {}>'.format(self.body)
+
+
+class Oncall(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    username = db.Column(db.String(140))
+    status = db.Column(db.String(140))
+    service = db.Column(db.String(140))
+    color = db.Column(db.String(140))
+
+    def __repr__(self):
+        return '<Oncall {}>'.format(self.body)

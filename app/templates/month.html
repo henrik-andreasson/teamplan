@@ -79,7 +79,8 @@
           <td>  {{ _('Friday') }} </td>
           <td>  {{ _('Saturday') }} </td>
           <td>  {{ _('Sunday') }} </td>
-      </tr>
+          <td>  {{ _('Oncall') }} </td>
+        </tr>
 
       {% for week in month %}
         <tr>
@@ -92,11 +93,15 @@
                     {{ _('edit')}}
                   </a>
               {% endset %}
+              {% set hr_start %}
+                      {{ wrk.start.strftime("(%H:%M)") }}
+              {% endset %}
+
 
 
               <div style="background: {{wrk.color}}">
-                {{ _('%(username)s @ %(service)s ',
-                    username=wrk.username, service=wrk.service) }}
+                {{ _('%(username)s @ %(service)s %(hr_start)s',
+                    username=wrk.username, service=wrk.service, hr_start=hr_start) }}
                 {% if wrk.status != "assigned" %}
                   {{ edit_link }}
                 {% endif %}
@@ -105,6 +110,25 @@
               {% endfor %}
             </td>
           {% endfor %}
+              <td>
+                {% for day in week %}
+                  {% for oc in day['oncall'] %}
+                  {% set edit_link %}
+                      <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}">
+                        {{ _('edit')}}
+                      </a>
+                  {% endset %}
+
+                  <div style="background: {{oc.color}}">
+                    {{ _('%(username)s @ %(service)s',
+                        username=oc.username, service=oc.service) }}
+                      {{ edit_link }}
+                    <br/>
+                  </div>
+                  {% endfor %}
+                {% endfor %}
+
+              </td>
       </tr>
       {% endfor %}
     </table>

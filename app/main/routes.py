@@ -4,12 +4,12 @@ from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 # from guess_language import guess_language
 from app import db
-from app.main.forms import EditProfileForm, WorkForm, ServiceForm, AbsenseForm
-from app.models import User, Work, Service, Absense
+from app.main.forms import EditProfileForm, WorkForm, ServiceForm, AbsenseForm, OncallForm
+from app.models import User, Work, Service, Absense, Oncall
 from app.main import bp
 from calendar import Calendar
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
 
@@ -54,7 +54,7 @@ def service_stat_month(month,service=None,user=None):
                                                   func.datetime(Work.stop) < date_stop).with_entities(func.count()).scalar()
 
             user_all_work += stat_user[s.name]
-            print("u: %s w: %s s: %s" % (u.username,user_all_work,s.name))
+#            print("u: %s w: %s s: %s" % (u.username,user_all_work,s.name))
 
         stat_user['user_all_work']=user_all_work
         if user_all_work > 0:
@@ -106,16 +106,37 @@ def index():
                 if service is not None:
                     work = Work.query.filter(Work.service == service,
                                             func.datetime(Work.start) > date_min,
-                                            func.datetime(Work.stop) < date_max).all()
+                                            func.datetime(Work.stop) < date_max
+                                            ).order_by(Work.service)
+
+                    oncall = Oncall.query.filter( (Oncall.service == service) &
+                                                  (func.datetime(Oncall.start) > date_min) &
+                                                  (func.datetime(Oncall.stop) < date_max)
+                                        ).order_by(Oncall.service)
+
                 elif username is not None:
                     work = Work.query.filter(Work.username == username,
                                             func.datetime(Work.start) > date_min,
-                                            func.datetime(Work.stop) < date_max).all()
+                                            func.datetime(Work.stop) < date_max
+                                            ).order_by(Work.service)
+
+                    oncall = Oncall.query.filter( (Oncall.username == username) &
+                                                  (func.datetime(Oncall.start) > date_min ) &
+                                                  (func.datetime(Oncall.start) < date_max )
+                                                ).order_by(Oncall.service)
+
                 else:
                     work = Work.query.filter(func.datetime(Work.start) > date_min,
-                                func.datetime(Work.stop) < date_max).all()
+                                func.datetime(Work.stop) < date_max
+                                ).order_by(Work.service)
+
+                    oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
+                                                  (func.datetime(Oncall.start) < date_max )
+                                                ).order_by(Oncall.service)
+
 
                 day_info['work'] = work
+                day_info['oncall'] = oncall
 
             output_week.insert(weekday, day_info)
 
@@ -135,7 +156,8 @@ def index():
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
-                           prev_url=prev_url, selected_month=month_str)
+                           prev_url=prev_url, selected_month=month_str,
+                           oncall=oncall)
 
 
 @bp.route('/explore')
@@ -455,4 +477,110 @@ def absense_list():
 
     return render_template('absense.html', title=_('absense'),
                            allabsense=absense.items, next_url=next_url,
+                           prev_url=prev_url)
+
+
+@bp.route('/oncall/add', methods=['GET', 'POST'])
+@login_required
+def oncall_add():
+    form = OncallForm()
+
+    form.username.choices = [(u.username, u.username)
+                             for u in User.query.all()]
+
+    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
+
+    if request.method == 'POST' and form.validate_on_submit():
+        service = Service.query.filter_by(name=form.service.data).first()
+        oncall = Oncall(start=form.start.data,
+                    stop=form.stop.data,
+                    username=form.username.data,
+                    service=form.service.data,
+                    color=service.color,
+                    status=form.status.data)
+        db.session.add(oncall)
+        db.session.commit()
+        flash(_('New oncall is now posted!'))
+
+        new_oncall_mess = 'new oncall: %s\t%s\t%s\t@%s\nby %s\n ' % (oncall.start,
+                         oncall.stop, oncall.service,
+                         oncall.username, current_user.username)
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message(new_oncall_mess,
+                                 channel=current_app.config['ROCKET_CHANNEL']
+                                 ).json()
+
+        return redirect(url_for('main.index'))
+    else:
+        return render_template('oncall.html', title=_('Add oncall'),
+                               form=form)
+
+
+@bp.route('/oncall/edit/', methods=['GET', 'POST'])
+@login_required
+def oncall_edit():
+
+    oncallid = request.args.get('oncall')
+    oncall = Oncall.query.get(oncallid)
+
+    if oncall is None:
+        render_template('service.html', title=_('oncall is not defined'))
+
+    form = OncallForm(formdata=request.form, obj=oncall)
+    form.username.choices = [(u.username, u.username)
+                             for u in User.query.all()]
+    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
+
+    if request.method == 'POST' and form.validate_on_submit():
+        string_from='%s\t%s\t%s\t@%s\n' % (oncall.start,oncall.stop,oncall.service,oncall.username)
+        form.populate_obj(oncall)
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        string_to='%s\t%s\t%s\t@%s\n' % (oncall.start,oncall.stop,oncall.service,oncall.username)
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('edit of oncall from: \n%s\nto:\n%s\nby: %s' % (
+                                 string_from,string_to,current_user.username),
+                                 channel=current_app.config['ROCKET_CHANNEL']
+                                 ).json()
+
+        return redirect(url_for('main.index'))
+
+    else:
+        return render_template('index.html', title=_('Edit oncall'),
+                               form=form)
+
+
+@bp.route('/oncall/list/', methods=['GET', 'POST'])
+@login_required
+def oncall_list():
+
+    page = request.args.get('page', 1, type=int)
+    username = request.args.get('username')
+    service = request.args.get('service')
+
+    if username is not None:
+        oncall = Oncall.query.filter_by(username=username).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+    elif service is not None:
+        oncall = Oncall.query.filter_by(service=service).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+    else:
+        oncall = Oncall.query.order_by(Oncall.start).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+
+    next_url = url_for('main.index', page=oncall.next_num) \
+        if oncall.has_next else None
+    prev_url = url_for('main.index', page=oncall.prev_num) \
+        if oncall.has_prev else None
+
+    for i in oncall.items:
+        i.start = i.start.strftime("%H:%M")
+        i.stop = i.stop.strftime("%H:%M")
+
+    return render_template('oncall.html', title=_('oncall'),
+                           alloncall=oncall.items, next_url=next_url,
                            prev_url=prev_url)

@@ -54,3 +54,17 @@ class AbsenseForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+
+class OncallForm(FlaskForm):
+    username = SelectField(_l('Username'))
+    service = SelectField(_l('service'), validators=[DataRequired()])
+    status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
+                                                ('unassigned', 'Unassigned'),
+                                                ('wants-out', 'Wants out'),
+                                                ('needs-out', 'Needs out')])
+    start = DateTimeField(_l('Start Oncall'), validators=[DataRequired()],
+                          format='%Y-%m-%d %H:%M',default=datetime.now())
+    stop = DateTimeField(_l('Stop Oncall'),
+                         validators=[DataRequired()], format='%Y-%m-%d %H:%M',
+                         default=datetime.now())
+    submit = SubmitField(_l('Submit'))
