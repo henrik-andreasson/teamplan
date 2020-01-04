@@ -17,12 +17,10 @@ class Config(object):
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['your-email@example.com']
     LANGUAGES = ['en', 'es']
-    MS_TRANSLATOR_KEY = os.environ.get('MS_TRANSLATOR_KEY')
     POSTS_PER_PAGE = 25
-    ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
+    ROCKET_ENABLED=os.environ.get('ROCKET_ENABLED') or False
     ROCKET_USER=os.environ.get('ROCKET_USER') or 'teamplan'
     ROCKET_PASS=os.environ.get('ROCKET_PASS') or 'foo123'
     ROCKET_URL=os.environ.get('ROCKET_URL') or 'http://172.17.0.4:3000'
     ROCKET_CHANNEL=os.environ.get('ROCKET_CHANNEL') or 'GENERAL'
     NON_WORKING_DAYS_COLOR=os.environ.get('NON_WORKING_DAYS_COLOR') or "#FF2222"
- 

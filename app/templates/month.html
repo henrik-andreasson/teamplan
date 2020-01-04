@@ -92,7 +92,7 @@
 
 <!-- week number + on call -->
           <td>
-              <a href="{{ url_for('main.oncall_add', month=selected_month) }}">
+              <a href="{{ url_for('main.oncall_add', month=selected_month, day=week[0]['display_day']) }}">
 
             {% for day in week %}
               {% if day['week_day'] == 1 %}

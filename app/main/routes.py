@@ -158,9 +158,6 @@ def index():
                 day_info['oncall'] = oncall
                 day_info['nwd'] = nonworkingdays
 
-                pp = pprint.PrettyPrinter(indent=4)
-                pp.pprint(day_info)
-
             output_week.insert(weekday, day_info)
 
         output_month.insert(mon_week, output_week)
@@ -319,10 +316,11 @@ def work_add():
         new_work_mess = 'new work: %s\t%s\t%s\t@%s\nby %s\n ' % (work.start,
                          work.stop, work.service,
                          work.username, current_user.username)
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+        if current_app.config['ROCKET_ENABLED']:
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message(new_work_mess,
+            rocket.chat_post_message(new_work_mess,
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
 
@@ -330,8 +328,12 @@ def work_add():
     else:
         day = request.args.get('day')
         month = request.args.get('month')
-        date_start_str = month + "-" + day
-        form.start.data =  datetime.strptime(date_start_str, "%Y-%M-%d")
+        if day is not None and month is not None:
+            date_start_str = month + "-" + day + " 08:00"
+            date_stop_str = month + "-" + day + " 12:30"
+
+            form.start.data =  datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
+            form.stop.data =  datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
         return render_template('work.html', title=_('Add Work'),
                                form=form)
 
@@ -356,11 +358,13 @@ def work_edit():
         form.populate_obj(work)
         db.session.commit()
         flash(_('Your changes have been saved.'))
-        string_to='%s\t%s\t%s\t@%s\n' % (work.start,work.stop,work.service,work.username)
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+
+        if current_app.config['ROCKET_ENABLED']:
+            string_to='%s\t%s\t%s\t@%s\n' % (work.start,work.stop,work.service,work.username)
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('edit of work from: \n%s\nto:\n%s\nby: %s' % (
+            rocket.chat_post_message('edit of work from: \n%s\nto:\n%s\nby: %s' % (
                                  string_from,string_to,current_user.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
@@ -429,10 +433,12 @@ def absense_add():
         db.session.add(absense)
         db.session.commit()
         flash(_('New absense is now posted!'))
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+        print("rocket enabled?: %s" % current_app.config['ROCKET_ENABLED'])
+        if current_app.config['ROCKET_ENABLED']:
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('new absense: %s\t%s\t%s\t@%s ' % (
+            rocket.chat_post_message('new absense: %s\t%s\t%s\t@%s ' % (
                                  absense.start,absense.stop,absense.status,
                                  absense.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
@@ -466,14 +472,15 @@ def absense_edit():
         form.populate_obj(absense)
         db.session.commit()
         flash(_('Your changes have been saved.'))
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+        if current_app.config['ROCKET_ENABLED']:
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket_msg_to = 'to: \n%s\t%s\t%s\t@%s ' % (absense.start,
+            rocket_msg_to = 'to: \n%s\t%s\t%s\t@%s ' % (absense.start,
                                                     absense.stop,
                                                     absense.status,
                                                     absense.username)
-        rocket.chat_post_message("%s\n%s\n\nby: %s" % (rocket_msg_from,
+            rocket.chat_post_message("%s\n%s\n\nby: %s" % (rocket_msg_from,
                                 rocket_msg_to,
                                 current_user.username),
                                 channel=current_app.config['ROCKET_CHANNEL']
@@ -535,15 +542,26 @@ def oncall_add():
         new_oncall_mess = 'new oncall: %s\t%s\t%s\t@%s\nby %s\n ' % (oncall.start,
                          oncall.stop, oncall.service,
                          oncall.username, current_user.username)
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+        if current_app.config['ROCKET_ENABLED']:
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message(new_oncall_mess,
+            rocket.chat_post_message(new_oncall_mess,
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
 
         return redirect(url_for('main.index'))
     else:
+        day = request.args.get('day')
+        month = request.args.get('month')
+        if day is not None and month is not None:
+            date_start_str = month + "-" + day
+            date_start_str = month + "-" + day + " 08:00"
+
+            form.start.data =  datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
+            form.stop.data =  form.start.data + relativedelta.relativedelta(days=7)
+
+
         return render_template('oncall.html', title=_('Add oncall'),
                                form=form)
 
@@ -568,11 +586,13 @@ def oncall_edit():
         form.populate_obj(oncall)
         db.session.commit()
         flash(_('Your changes have been saved.'))
-        string_to='%s\t%s\t%s\t@%s\n' % (oncall.start,oncall.stop,oncall.service,oncall.username)
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+
+        if current_app.config['ROCKET_ENABLED']:
+            string_to='%s\t%s\t%s\t@%s\n' % (oncall.start,oncall.stop,oncall.service,oncall.username)
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('edit of oncall from: \n%s\nto:\n%s\nby: %s' % (
+            rocket.chat_post_message('edit of oncall from: \n%s\nto:\n%s\nby: %s' % (
                                  string_from,string_to,current_user.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
@@ -628,13 +648,14 @@ def nonworkingdays_add():
         db.session.commit()
         flash(_('New nonworkingdays is now posted!'))
 
-        new_nonworkingdays_mess = 'new nonworkingdays: %s\t%s\t%s\nby %s\n ' % (nonworkingdays.start,
+        if current_app.config['ROCKET_ENABLED']:
+            new_nonworkingdays_mess = 'new nonworkingdays: %s\t%s\t%s\nby %s\n ' % (nonworkingdays.start,
                          nonworkingdays.stop, nonworkingdays.name,
                          current_user.username)
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message(new_nonworkingdays_mess,
+            rocket.chat_post_message(new_nonworkingdays_mess,
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
 
@@ -670,10 +691,11 @@ def nonworkingdays_edit():
         string_to='%s\t%s\t%s\n' % (nwd.start,
                                     nwd.stop,
                                     nwd.name)
-        rocket = RocketChat(current_app.config['ROCKET_USER'],
+        if current_app.config['ROCKET_ENABLED'] is not False:
+            rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('edit of nonworkingdays from: \n%s\nto:\n%s\nby: %s' % (
+            rocket.chat_post_message('edit of nonworkingdays from: \n%s\nto:\n%s\nby: %s' % (
                                  string_from,string_to,current_user.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
