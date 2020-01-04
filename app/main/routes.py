@@ -4,15 +4,16 @@ from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 # from guess_language import guess_language
 from app import db
-from app.main.forms import EditProfileForm, WorkForm, ServiceForm, AbsenseForm, OncallForm
-from app.models import User, Work, Service, Absense, Oncall
+from app.main.forms import EditProfileForm, WorkForm, ServiceForm, \
+    AbsenseForm, OncallForm, NonWorkingDaysForm
+from app.models import User, Work, Service, Absense, Oncall, NonWorkingDays
 from app.main import bp
 from calendar import Calendar
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
-
+import pprint
 
 @bp.before_app_request
 def before_request():
@@ -52,9 +53,11 @@ def service_stat_month(month,service=None,user=None):
                                                   Work.username == u.username,
                                                   func.datetime(Work.start) > date_start,
                                                   func.datetime(Work.stop) < date_stop).with_entities(func.count()).scalar()
-
             user_all_work += stat_user[s.name]
-#            print("u: %s w: %s s: %s" % (u.username,user_all_work,s.name))
+
+        stat_user['oncall'] = Oncall.query.filter(Oncall.username == u.username,
+                                  func.datetime(Oncall.start) > date_start,
+                                  func.datetime(Oncall.start) < date_stop).with_entities(func.count()).scalar()
 
         stat_user['user_all_work']=user_all_work
         if user_all_work > 0:
@@ -67,8 +70,8 @@ def service_stat_month(month,service=None,user=None):
 def index():
     output_month = []
 
-    users = User.query.all()
-    services = Service.query.all()
+    users = User.query.order_by(User.username)
+    services = Service.query.order_by(Service.name)
     username = request.args.get('username')
     service = request.args.get('service')
     month = request.args.get('month')
@@ -78,13 +81,16 @@ def index():
     else:
         selected_month = datetime.strptime(month, "%Y-%m")
 
-    print("selected month: %s" % selected_month)
+#    print("selected month: %s" % selected_month)
     next_month = selected_month + relativedelta.relativedelta(months=1)
     prev_month = selected_month + relativedelta.relativedelta(months=-1)
 
     calendar = Calendar().monthdayscalendar(selected_month.year, selected_month.month)
     display_month = '{:02d}'.format(selected_month.month)
     display_year = '{:02d}'.format(selected_month.year)
+    working_days_in_month = 0
+    non_working_days_in_month = 0
+    working_days = [ 0, 1, 2, 3, 4, 5]
 
     mon_week = 0
     for week in calendar:
@@ -95,9 +101,16 @@ def index():
             weekday = weekday + 1
 
             day_info = {}
+
+# id day is zero the month has not started, ie the 1:st of the month may be a
+# Wednesday then monday and tuseday is 0
             if day != 0:
+                if weekday in working_days:
+                    working_days_in_month += 1
+
+
                 display_day = '{:02d}'.format(day)
-                day_info = {'display_day': display_day}
+                day_info = {'display_day': display_day, 'week_day': weekday}
 
                 date_min = "%s-%s-%s 00:00:00" % (display_year, display_month,
                                                   display_day)
@@ -134,9 +147,19 @@ def index():
                                                   (func.datetime(Oncall.start) < date_max )
                                                 ).order_by(Oncall.service)
 
+                nonworkingdays = NonWorkingDays.query.filter( (func.datetime(NonWorkingDays.start) > date_min ) &
+                                                              (func.datetime(NonWorkingDays.start) < date_max )
+                                                ).all()
+                non_working_days_in_month += len(nonworkingdays)
 
+                week_date = date(selected_month.year, selected_month.month, day)
+                day_info['week'] = week_date.isocalendar()[1]
                 day_info['work'] = work
                 day_info['oncall'] = oncall
+                day_info['nwd'] = nonworkingdays
+
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(day_info)
 
             output_week.insert(weekday, day_info)
 
@@ -157,7 +180,10 @@ def index():
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
                            prev_url=prev_url, selected_month=month_str,
-                           oncall=oncall)
+                           oncall=oncall,
+                           working_days_in_month=working_days_in_month,
+                           non_working_days_in_month=non_working_days_in_month,
+                           nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'])
 
 
 @bp.route('/explore')
@@ -302,6 +328,10 @@ def work_add():
 
         return redirect(url_for('main.index'))
     else:
+        day = request.args.get('day')
+        month = request.args.get('month')
+        date_start_str = month + "-" + day
+        form.start.data =  datetime.strptime(date_start_str, "%Y-%M-%d")
         return render_template('work.html', title=_('Add Work'),
                                form=form)
 
@@ -577,10 +607,98 @@ def oncall_list():
     prev_url = url_for('main.index', page=oncall.prev_num) \
         if oncall.has_prev else None
 
-    for i in oncall.items:
-        i.start = i.start.strftime("%H:%M")
-        i.stop = i.stop.strftime("%H:%M")
 
     return render_template('oncall.html', title=_('oncall'),
                            alloncall=oncall.items, next_url=next_url,
+                           prev_url=prev_url)
+
+
+
+@bp.route('/nonworkingdays/add', methods=['GET', 'POST'])
+@login_required
+def nonworkingdays_add():
+    form = NonWorkingDaysForm()
+    page = request.args.get('page', 1, type=int)
+
+    if request.method == 'POST' and form.validate_on_submit():
+        nonworkingdays = NonWorkingDays(start=form.start.data,
+                    stop=form.stop.data,
+                    name=form.name.data)
+        db.session.add(nonworkingdays)
+        db.session.commit()
+        flash(_('New nonworkingdays is now posted!'))
+
+        new_nonworkingdays_mess = 'new nonworkingdays: %s\t%s\t%s\nby %s\n ' % (nonworkingdays.start,
+                         nonworkingdays.stop, nonworkingdays.name,
+                         current_user.username)
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message(new_nonworkingdays_mess,
+                                 channel=current_app.config['ROCKET_CHANNEL']
+                                 ).json()
+
+        return redirect(url_for('main.index'))
+    else:
+
+        nonworkingdays = NonWorkingDays.query.order_by(NonWorkingDays.start).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+
+        return render_template('nonworkingdays.html', title=_('Add nonworkingdays'),
+                               allnwd=nonworkingdays.items,form=form)
+
+
+@bp.route('/nonworkingdays/edit/', methods=['GET', 'POST'])
+@login_required
+def nonworkingdays_edit():
+
+    nonworkingdaysid = request.args.get('nwd')
+    nwd = NonWorkingDays.query.get(nonworkingdaysid)
+
+    if nwd is None:
+        render_template('nonworkingdays.html', title=_('nonworkingdays is not defined'))
+
+    form = NonWorkingDaysForm(formdata=request.form, obj=nwd)
+
+    if request.method == 'POST' and form.validate_on_submit():
+        string_from='%s\t%s\t%s\n' % (nwd.start,
+                                      nwd.stop,
+                                      nwd.name)
+        form.populate_obj(nwd)
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        string_to='%s\t%s\t%s\n' % (nwd.start,
+                                    nwd.stop,
+                                    nwd.name)
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('edit of nonworkingdays from: \n%s\nto:\n%s\nby: %s' % (
+                                 string_from,string_to,current_user.username),
+                                 channel=current_app.config['ROCKET_CHANNEL']
+                                 ).json()
+
+        return redirect(url_for('main.index'))
+
+    else:
+        return render_template('index.html', title=_('Edit nonworkingdays'),
+                               form=form)
+
+
+@bp.route('/nonworkingdays/list/', methods=['GET', 'POST'])
+@login_required
+def nonworkingdays_list():
+
+    page = request.args.get('page', 1, type=int)
+
+    nonworkingdays = NonWorkingDays.query.order_by(NonWorkingDays.start).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+
+    next_url = url_for('main.index', page=nonworkingdays.next_num) \
+        if nonworkingdays.has_next else None
+    prev_url = url_for('main.index', page=nonworkingdays.prev_num) \
+        if nonworkingdays.has_prev else None
+
+    return render_template('nonworkingdays.html', title=_('nonworkingdays'),
+                           allnwd=nonworkingdays.items, next_url=next_url,
                            prev_url=prev_url)

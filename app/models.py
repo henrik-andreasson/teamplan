@@ -187,3 +187,14 @@ class Oncall(db.Model):
 
     def __repr__(self):
         return '<Oncall {}>'.format(self.body)
+
+
+class NonWorkingDays(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(140))
+    start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    color = db.Column(db.String(140))
+
+    def __repr__(self):
+        return '<NonWorkingDays {}>'.format(self.name)

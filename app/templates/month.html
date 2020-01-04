@@ -54,6 +54,11 @@
             {{ _('Services') }}
         </td>
 
+        <td>
+          <a href="{{ url_for('main.index', month=selected_month)}}">
+            {{ _('Everybody') }}    </a>
+        </td>
+
     {% for service in services %}
 
       {% set service_link %}
@@ -72,63 +77,102 @@
     </table>
     <table class="table table-hover">
       <tr>
-          <td>  {{ _('Monday') }} </td>
-          <td>  {{ _('Tuesday') }}  </td>
-          <td>  {{ _('Wednesday') }}  </td>
-          <td>  {{ _('Thursday') }} </td>
-          <td>  {{ _('Friday') }} </td>
-          <td>  {{ _('Saturday') }} </td>
-          <td>  {{ _('Sunday') }} </td>
-          <td>  {{ _('Oncall') }} </td>
-        </tr>
+        <td>  {{ _('Week no / Oncall') }} </td>
+        <td>  {{ _('Monday') }} </td>
+        <td>  {{ _('Tuesday') }}  </td>
+        <td>  {{ _('Wednesday') }}  </td>
+        <td>  {{ _('Thursday') }} </td>
+        <td>  {{ _('Friday') }} </td>
+        <td>  {{ _('Saturday') }} </td>
+        <td>  {{ _('Sunday') }} </td>
+      </tr>
 
       {% for week in month %}
         <tr>
+
+<!-- week number + on call -->
+          <td>
+              <a href="{{ url_for('main.oncall_add', month=selected_month) }}">
+
+            {% for day in week %}
+              {% if day['week_day'] == 1 %}
+                {{ _('Week:') }} {{ day['week'] }}
+              {% endif %}
+            </a>
+
+              {% for oc in day['oncall'] %}
+                {% set edit_link %}
+                  <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}">
+                    {{ _('edit')}}
+                  </a>
+                {% endset %}
+
+                <div style="background: {{oc.color}}">
+                  {{ _('%(username)s @ %(service)s',
+                    username=oc.username, service=oc.service) }}
+                  {{ edit_link }}
+                  <br/>
+                </div>
+              {% endfor %}
+            {% endfor %}
+
+          </td>
+
+
+<!--  work  -->
+
           {% for day in week %}
-            <td>  {{ day['display_day'] }}
+            <td>
+                  <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}">
+                    {{ day['display_day'] }}
+                  </a>
+
               {% for wrk in day['work'] %}
 
-              {% set edit_link %}
+                {% set edit_link %}
                   <a href="{{ url_for('main.work_edit', work=wrk.id) }}">
                     {{ _('edit')}}
                   </a>
-              {% endset %}
-              {% set hr_start %}
+                {% endset %}
+                {% set hr_start %}
                       {{ wrk.start.strftime("(%H:%M)") }}
-              {% endset %}
+                {% endset %}
 
 
 
-              <div style="background: {{wrk.color}}">
-                {{ _('%(username)s @ %(service)s %(hr_start)s',
+                <div style="background: {{wrk.color}}">
+                  {{ _('%(username)s @ %(service)s %(hr_start)s',
                     username=wrk.username, service=wrk.service, hr_start=hr_start) }}
-                {% if wrk.status != "assigned" %}
-                  {{ edit_link }}
-                {% endif %}
-                <br/>
-              </div>
+                  {% if wrk.status != "assigned" %}
+                    {{ edit_link }}
+                  {% endif %}
+                  <br/>
+                </div>
+
+
               {% endfor %}
+
+<!-- non working days -->
+              {% for nwd in day['nwd'] %}
+                {% set edit_link %}
+                  <a href="{{ url_for('main.nonworkingdays_edit', nwd=nwd.id) }}">
+                    {{ _('edit')}}
+                  </a>
+                {% endset %}
+
+                <div style="background: {{nwd_color}}">
+                  {{ _('%(name)s',
+                    name=nwd.name, start=nwd.start, stop=nwd.stop) }}
+                    {{ edit_link }}
+                  <br/>
+                </div>
+
+
+              {% endfor %}
+
+
             </td>
           {% endfor %}
-              <td>
-                {% for day in week %}
-                  {% for oc in day['oncall'] %}
-                  {% set edit_link %}
-                      <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}">
-                        {{ _('edit')}}
-                      </a>
-                  {% endset %}
-
-                  <div style="background: {{oc.color}}">
-                    {{ _('%(username)s @ %(service)s',
-                        username=oc.username, service=oc.service) }}
-                      {{ edit_link }}
-                    <br/>
-                  </div>
-                  {% endfor %}
-                {% endfor %}
-
-              </td>
       </tr>
       {% endfor %}
     </table>
@@ -142,6 +186,7 @@
           <td>    {{ service.name }}          </td>
         {% endfor %}
         <td>    {{_('Total work')}}          </td>
+        <td>    {{_('Oncall')}}          </td>
       </tr>
 
 
@@ -159,9 +204,24 @@
           </td>
         {% endfor %}
         <td>    {{ stat_user['user_all_work'] }}          </td>
+        <td>    {{ stat_user['oncall'] }}          </td>
 
     {% endfor %}
       </tr>
+    </table>
+
+    <table class="table table-hover">
+
+      <tr>
+        <td> {{ _('Working days in month') }}: </td>
+        <td> {{working_days_in_month}} </td>
+      </tr>
+      <tr>
+        <td> {{ _('Non Working days in month') }}: </td>
+        <td> {{non_working_days_in_month}} </td>
+      </tr>
+
+    </table>
 
 
 {% endblock %}

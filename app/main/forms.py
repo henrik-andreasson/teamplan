@@ -68,3 +68,12 @@ class OncallForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+
+class NonWorkingDaysForm(FlaskForm):
+    name = StringField(_l('name'), validators=[DataRequired()],
+                        default="Non Working Day")
+    start = DateTimeField(_l('Start Non Working Day'), validators=[DataRequired()],
+                          format='%Y-%m-%d %H:%M',default=datetime.now())
+    stop = DateTimeField(_l('Stop Non Working Day'), validators=[DataRequired()],
+                        format='%Y-%m-%d %H:%M', default=datetime.now())
+    submit = SubmitField(_l('Submit'))

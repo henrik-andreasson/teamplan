@@ -24,4 +24,5 @@ class Config(object):
     ROCKET_PASS=os.environ.get('ROCKET_PASS') or 'foo123'
     ROCKET_URL=os.environ.get('ROCKET_URL') or 'http://172.17.0.4:3000'
     ROCKET_CHANNEL=os.environ.get('ROCKET_CHANNEL') or 'GENERAL'
-    ABSENSE_COLOR="#446600"
+    NON_WORKING_DAYS_COLOR=os.environ.get('NON_WORKING_DAYS_COLOR') or "#FF2222"
+ 
