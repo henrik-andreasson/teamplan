@@ -1,0 +1,17 @@
+[Unit]
+Description = Gunicorn for teamplan
+After = network.target
+
+[Service]
+PermissionsStartOnly = true
+PIDFile = /run/teamplan/teamplan.pid
+WorkingDirectory = /opt/teamplan
+ExecStartPre = /bin/mkdir /run/teamplan
+ExecStart = /usr/bin/env gunicorn teamplan:app -b 0.0.0.0:443 --pid /run/teamplan/teamplan.pid  --keyfile /opt/teamplan/privkey.pem  --certfile  /opt/teamplan/cert.pem
+ExecReload = /bin/kill -s HUP $MAINPID
+ExecStop = /bin/kill -s TERM $MAINPID
+ExecStopPost = /bin/rm -rf /run/teamplan
+PrivateTmp = true
+
+[Install]
+WantedBy = multi-user.target

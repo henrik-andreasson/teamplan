@@ -13,7 +13,6 @@ from datetime import datetime, date
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
-import pprint
 
 @bp.before_app_request
 def before_request():

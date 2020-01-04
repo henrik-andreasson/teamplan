@@ -1,9 +1,11 @@
 #!/bin/bash
 
 # uses httpie  - pip3 install httpie
+
 read -p "username > " user_name
 read -p "password > " pass_word
 read -p "service > " service
+
 if [ "x$1" != "x" ] ; then
     days=$1
 else
@@ -11,21 +13,27 @@ else
     exit
 fi
 
+if [ "x$2" != "x" ] ; then
+    users=$2
+else
+    echo "arg2 must be a file with users"
+    exit
+fi
+
+
 token=$(http --auth "$user_name:$pass_word" POST http://localhost:5000/api/tokens | jq ".token")
 
 
-for row in $(cat $csv) ; do
-# 2020-01-31;08:00;12:30;cs;ab
-  date=$(cut -f1 -d\;)
-  starttime=$(cut -f2 -d\;)
-  stoptime=$(cut -f3 -d\;)
-  service=$(cut -f4 -d\;)
-  assagniee=$(cut -f5 -d\;)
+for day in $(cat $days) ; do
 
+  work_user=$(shuf -n1 "$service-users.txt")
   http --verbose POST http://localhost:5000/api/work service=$service \
-    start="$date $starttime" stop="$date $stoptime" username="$assagniee" \
+    start="$day 08:00" stop="$day 12:30" username="$work_user" \
      "Authorization:Bearer $token"
 
-  sleep 1
+  work_user=$(shuf -n1 "$service-users.txt")
+  http --verbose POST http://localhost:5000/api/work service=$service \
+    start="$day 12:30" stop="$day 17:00" username="$work_user" \
+    "Authorization:Bearer $token"
 
 done
