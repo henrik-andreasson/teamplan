@@ -92,29 +92,31 @@
 
 <!-- week number + on call -->
           <td>
-              <a href="{{ url_for('main.oncall_add', month=selected_month, day=week[0]['display_day']) }}">
+            <div class="list-group">
 
-            {% for day in week %}
-              {% if day['week_day'] == 1 %}
-                {{ _('Week:') }} {{ day['week'] }}
-              {% endif %}
-            </a>
-
-              {% for oc in day['oncall'] %}
-                {% set edit_link %}
-                  <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}">
-                    {{ _('edit')}}
+              {% for day in week %}
+                {% if day['week_day'] == 1 %}
+                  <a href="{{ url_for('main.oncall_add', month=selected_month, day=week[0]['display_day']) }}" class="list-group-item">
+                    {{ _('Week:') }} {{ day['week'] }}
                   </a>
+                {% endif %}
+
+                {% for oc in day['oncall'] %}
+
+                {% set start %}
+                      {{ oc.start.strftime("(%Y-%m-%d)") }}
+                {% endset %}
+                {% set stop %}
+                      {{ oc.stop.strftime("(%Y-%m-%d)") }}
                 {% endset %}
 
-                <div style="background: {{oc.color}}">
-                  {{ _('%(username)s @ %(service)s',
-                    username=oc.username, service=oc.service) }}
-                  {{ edit_link }}
-                  <br/>
-                </div>
+                  <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" style="background: {{oc.color}}" class="list-group-item">
+                    <h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.username, service=oc.service) }}</h4>
+                    <p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }}</p>
+                  </a>
+
+                {% endfor %}
               {% endfor %}
-            {% endfor %}
 
           </td>
 
@@ -123,56 +125,54 @@
 
           {% for day in week %}
             <td>
-                  <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}">
+              <div class="list-group">
+                  <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item">
                     {{ day['display_day'] }}
                   </a>
+                  {% for wrk in day['work'] %}
 
-              {% for wrk in day['work'] %}
-
-                {% set edit_link %}
-                  <a href="{{ url_for('main.work_edit', work=wrk.id) }}">
-                    {{ _('edit')}}
-                  </a>
-                {% endset %}
                 {% set hr_start %}
                       {{ wrk.start.strftime("(%H:%M)") }}
                 {% endset %}
+                {% set hr_stop %}
+                      {{ wrk.stop.strftime("(%H:%M)") }}
+                {% endset %}
 
 
-
-                <div style="background: {{wrk.color}}">
-                  {{ _('%(username)s @ %(service)s %(hr_start)s',
-                    username=wrk.username, service=wrk.service, hr_start=hr_start) }}
-                  {% if wrk.status != "assigned" %}
-                    {{ edit_link }}
-                  {% endif %}
-                  <br/>
-                </div>
+                <a href="{{ url_for('main.work_edit', work=wrk.id) }}" class="list-group-item" style="background: {{wrk.color}}">
+                  <h4 class="list-group-item-heading">{{ _('%(username)s@%(service)s',
+                                        username=wrk.username, service=wrk.service) }}</h4>
+                  <p class="list-group-item-text">{{ _('%(hr_start)s - %(hr_stop)s',
+                                        hr_start=hr_start, hr_stop=hr_stop) }}</p>
+                </a>
 
 
               {% endfor %}
 
 <!-- non working days -->
               {% for nwd in day['nwd'] %}
-                {% set edit_link %}
-                  <a href="{{ url_for('main.nonworkingdays_edit', nwd=nwd.id) }}">
-                    {{ _('edit')}}
-                  </a>
-                {% endset %}
 
-                <div style="background: {{nwd_color}}">
-                  {{ _('%(name)s',
-                    name=nwd.name, start=nwd.start, stop=nwd.stop) }}
-                    {{ edit_link }}
-                  <br/>
-                </div>
+              {% set nwd_start %}
+                    {{ nwd.start.strftime("(%H:%M)") }}
+              {% endset %}
+              {% set nwd_stop %}
+                    {{ nwd.stop.strftime("(%H:%M)") }}
+              {% endset %}
+
+
+              <a href="{{ url_for('main.nonworkingdays_edit', nwd=nwd.id) }}" class="list-group-item" style="background: {{nwd_color}}">
+                <h4 class="list-group-item-heading">{{ _('%(name)s', name=nwd.name) }}</h4>
+                <p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=nwd_start, stop=nwd_stop) }}</p>
+              </a>
 
 
               {% endfor %}
 
+            </div>
 
             </td>
           {% endfor %}
+
       </tr>
       {% endfor %}
     </table>
