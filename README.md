@@ -19,16 +19,21 @@ PLANNED feature is ical export (please send pull requests :-)
 
 # pictures
 
+## first page / month view
 ![first page](doc/first-page.png)
 
 ![month-view](doc/month-view.png)
 
+## On call
 ![on-call](doc/oncall.png)
 
+## stats 
 ![stats](doc/stats.png)
 
+## Non Working days
 ![Non Working Days](doc/nwd.png)
 
+## absense
 ![Absennse](doc/absense.png)
 
 # Run on CentOS
