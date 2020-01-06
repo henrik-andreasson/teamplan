@@ -111,8 +111,8 @@
                 {% endset %}
 
                   <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" style="background: {{oc.color}}" class="list-group-item">
-                    <h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.username, service=oc.service) }}</h4>
-                    <p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }}</p>
+                    <div class="text-nowrap"><h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.username, service=oc.service) }}</h4></div>
+                    <div class="text-nowrap"><p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }}</p></div>
                   </a>
 
                 {% endfor %}
@@ -140,10 +140,10 @@
 
 
                 <a href="{{ url_for('main.work_edit', work=wrk.id) }}" class="list-group-item" style="background: {{wrk.color}}">
-                  <h4 class="list-group-item-heading">{{ _('%(username)s@%(service)s',
-                                        username=wrk.username, service=wrk.service) }}</h4>
-                  <p class="list-group-item-text">{{ _('%(hr_start)s - %(hr_stop)s',
-                                        hr_start=hr_start, hr_stop=hr_stop) }}</p>
+                  <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
+                                        username=wrk.username, service=wrk.service) }}</h4></div>
+                  <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
+                                        hr_start=hr_start, hr_stop=hr_stop) }}</p></div>
                 </a>
 
 
@@ -161,8 +161,9 @@
 
 
               <a href="{{ url_for('main.nonworkingdays_edit', nwd=nwd.id) }}" class="list-group-item" style="background: {{nwd_color}}">
-                <h4 class="list-group-item-heading">{{ _('%(name)s', name=nwd.name) }}</h4>
-                <p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=nwd_start, stop=nwd_stop) }}</p>
+                <div class="text-nowrap"><h4 class="text-nowrap" id="text-nowrap">{{ _('%(name)s', name=nwd.name) }}</h4></div>
+                <div class="text-nowrap"><p class="list-group-item-text  id="text-nowrap"">{{ _('%(start)s - %(stop)s', start=nwd_start, stop=nwd_stop) }}</p></div>
+
               </a>
 
 
