@@ -9,10 +9,11 @@ from app.main.forms import EditProfileForm, WorkForm, ServiceForm, \
 from app.models import User, Work, Service, Absense, Oncall, NonWorkingDays
 from app.main import bp
 from calendar import Calendar
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
+
 
 @bp.before_app_request
 def before_request():
@@ -21,7 +22,7 @@ def before_request():
         db.session.commit()
     g.locale = str(get_locale())
 
-def service_stat_month(month,service=None,user=None):
+def service_stat_month(month,service=None,user=None,month_info=None):
 
     if user is None:
         users = User.query.order_by(User.username.desc())
@@ -47,18 +48,30 @@ def service_stat_month(month,service=None,user=None):
         stat_user={}
         stat_user['username']=u.username
         user_all_work=0
+        user_work_hrs=timedelta(days=0,seconds=0)
+
         for s in services:
-            stat_user[s.name] = Work.query.filter(Work.service == s.name,
-                                                  Work.username == u.username,
-                                                  func.datetime(Work.start) > date_start,
-                                                  func.datetime(Work.stop) < date_stop).with_entities(func.count()).scalar()
+            work_list = Work.query.filter(Work.service == s.name,
+                                          Work.username == u.username,
+                                          func.datetime(Work.start) > date_start,
+                                          func.datetime(Work.stop) < date_stop
+                                          ).all()
+
+            for w in work_list:
+                user_work_hrs = user_work_hrs + ( w.stop - w.start )
+
+            stat_user[s.name] = len(work_list)
             user_all_work += stat_user[s.name]
 
         stat_user['oncall'] = Oncall.query.filter(Oncall.username == u.username,
                                   func.datetime(Oncall.start) > date_start,
                                   func.datetime(Oncall.start) < date_stop).with_entities(func.count()).scalar()
 
-        stat_user['user_all_work']=user_all_work
+        stat_user['user_all_work'] = user_all_work
+        stat_user['user_work_hrs'] = user_work_hrs.total_seconds() / 3600 # 60 min * 60 sec = 1 hour
+        stat_user['user_work_sec'] = user_work_hrs.total_seconds()
+        stat_user['user_work_percent'] = '{:03.1f} %'.format(stat_user['user_work_sec'] / month_info['working_sec_in_month'] * 100)
+
         if user_all_work > 0:
             stats.append(stat_user)
     return stats
@@ -146,6 +159,7 @@ def index():
                                                   (func.datetime(Oncall.start) < date_max )
                                                 ).order_by(Oncall.service)
 
+# FIXME: if a nonworkingday is already on a Saturday/Sunday it should not be counted
                 nonworkingdays = NonWorkingDays.query.filter( (func.datetime(NonWorkingDays.start) > date_min ) &
                                                               (func.datetime(NonWorkingDays.start) < date_max )
                                                 ).all()
@@ -162,8 +176,11 @@ def index():
         output_month.insert(mon_week, output_week)
 
     month_str = selected_month.strftime("%Y-%m")
-
     month_info = {}
+    month_info['non_working_days_in_month'] = non_working_days_in_month
+    month_info['working_days_in_month'] = working_days_in_month
+    month_info['working_hours_in_month'] = working_days_in_month * 8
+    month_info['working_sec_in_month'] = working_days_in_month * 8 * 60 * 60
     month_info['prev'] = prev_month.strftime("%b")
     month_info['this'] = selected_month.strftime("%Y %B")
     month_info['next'] = next_month.strftime("%b")
@@ -171,14 +188,12 @@ def index():
     prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
 
     print("selected month: %s" % selected_month)
-    stats=service_stat_month(selected_month,service,username)
+    stats=service_stat_month(selected_month,service,username,month_info)
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
                            prev_url=prev_url, selected_month=month_str,
                            oncall=oncall,
-                           working_days_in_month=working_days_in_month,
-                           non_working_days_in_month=non_working_days_in_month,
                            nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'])
 
 

@@ -186,7 +186,10 @@
         {% for service in services %}
           <td>    {{ service.name }}          </td>
         {% endfor %}
-        <td>    {{_('Total work')}}          </td>
+
+        <td>    {{_('Total work shift')}}          </td>
+        <td>    {{_('Total work hours')}}          </td>
+        <td>    {{_('Total work percent')}}          </td>
         <td>    {{_('Oncall')}}          </td>
       </tr>
 
@@ -204,7 +207,10 @@
             </<div>
           </td>
         {% endfor %}
-        <td>    {{ stat_user['user_all_work'] }}          </td>
+
+        <td>    {{ stat_user['user_all_work'] }}    </td>
+        <td>    {{ stat_user['user_work_hrs'] }}    </td>
+        <td>    {{ stat_user['user_work_percent'] }}    </td>
         <td>    {{ stat_user['oncall'] }}          </td>
 
     {% endfor %}
@@ -215,11 +221,19 @@
 
       <tr>
         <td> {{ _('Working days in month') }}: </td>
-        <td> {{working_days_in_month}} </td>
+        <td> {{ month_info['working_days_in_month'] }} </td>
       </tr>
       <tr>
         <td> {{ _('Non Working days in month') }}: </td>
-        <td> {{non_working_days_in_month}} </td>
+        <td> {{ month_info['non_working_days_in_month'] }} </td>
+      </tr>
+      <tr>
+        <td> {{ _('Working hours in month') }}: </td>
+        <td> {{ month_info['working_hours_in_month'] }} </td>
+      </tr>
+      <tr>
+        <td> {{ _('Working seconds in month') }}: </td>
+        <td> {{ month_info['working_sec_in_month'] }} </td>
       </tr>
 
     </table>
