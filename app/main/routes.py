@@ -13,6 +13,9 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
+from icalendar import  vCalAddress, vText, Event
+from icalendar import Calendar as icale
+import pytz
 
 
 @bp.before_app_request
@@ -738,3 +741,40 @@ def nonworkingdays_list():
     return render_template('nonworkingdays.html', title=_('nonworkingdays'),
                            allnwd=nonworkingdays.items, next_url=next_url,
                            prev_url=prev_url)
+
+
+
+@bp.route('/calendar/')
+@login_required
+def calendar():
+
+
+    work = Work.query.all()
+
+
+    cal = icale()
+
+#    cal.add('prodid', '-//My calendar product//schma.cs//')
+#    cal.add('version', '2.0')
+
+    for w in work:
+        event = Event()
+        event.add('summary', "%s@%s" % (w.username, w.service))
+        event.add('dtstart', w.start)
+        event.add('dtend', w.stop)
+        event.add('dtstamp', w.stop)
+
+        organizer = vCalAddress('MAILTO:schema@cgi.com')
+        organizer.params['cn'] = vText('Schema system')
+        event['organizer'] = organizer
+
+        attendee = vCalAddress('MAILTO:%s@example.com' % w. username)
+        attendee.params['cn'] = vText(w.username)
+        attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
+        event.add('attendee', attendee, encode=0)
+
+        cal.add_component(event)
+
+    response = current_app.make_response(cal.to_ical())
+    response.headers["Content-Disposition"] = "attachment; filename=calendar.ics"
+    return response
