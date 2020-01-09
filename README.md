@@ -33,8 +33,8 @@ PLANNED feature is ical export (please send pull requests :-)
 ## Non Working days
 ![Non Working Days](doc/nwd.png)
 
-## absense
-![Absennse](doc/absense.png)
+## absence
+![Absennse](doc/absence.png)
 
 # Run on CentOS
 

@@ -165,7 +165,7 @@ class Service(db.Model):
     def __repr__(self):
         return '<Service {}>'.format(self.body)
 
-class Absense(db.Model):
+class Absence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -173,7 +173,7 @@ class Absense(db.Model):
     status = db.Column(db.String(140))
 
     def __repr__(self):
-        return '<Absense {}>'.format(self.body)
+        return '<Absence {}>'.format(self.body)
 
 
 class Oncall(db.Model):

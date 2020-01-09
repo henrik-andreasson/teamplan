@@ -43,14 +43,14 @@ class WorkForm(FlaskForm):
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
 
-class AbsenseForm(FlaskForm):
+class AbsenceForm(FlaskForm):
     username = SelectField(_l('Username'))
     status = SelectField(_l('Status'), choices=[('requested', 'Requested'),
                                                 ('approved', 'Approved'),
                                                 ('denied', 'Denied')])
-    start = DateTimeField(_l('Start absense'), validators=[DataRequired()],
+    start = DateTimeField(_l('Start absence'), validators=[DataRequired()],
                           format='%Y-%m-%d %H:%M',default=datetime.now())
-    stop = DateTimeField(_l('Stop absense'),
+    stop = DateTimeField(_l('Stop absence'),
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))

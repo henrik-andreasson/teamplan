@@ -13,28 +13,28 @@
       </tr>
 
 
-      {% for absense in allabsense %}
+      {% for absence in allabsence %}
 
-      {% set absense_link %}
-          <a href="{{ url_for('main.absense_edit', absense=absense.id) }}">
-              {{ absense.id }}
+      {% set absence_link %}
+          <a href="{{ url_for('main.absence_edit', absence=absence.id) }}">
+              {{ absence.id }}
           </a>
       {% endset %}
 
-      {% set absense_start %}
-              {{ absense.start.strftime("%Y-%m-%d %H:%M") }}
+      {% set absence_start %}
+              {{ absence.start.strftime("%Y-%m-%d %H:%M") }}
       {% endset %}
 
-      {% set absense_stop %}
-              {{ absense.stop.strftime("%Y-%m-%d %H:%M") }}
+      {% set absence_stop %}
+              {{ absence.stop.strftime("%Y-%m-%d %H:%M") }}
       {% endset %}
 
         <tr>
-            <td>  {{ absense.username }}  </td>
-            <td>  {{ absense.status }}  </td>
-            <td>  {{ absense_start }} </td>
-            <td>  {{ absense_stop }} </td>
-            <td>  {{ absense_link }} </td>
+            <td>  {{ absence.username }}  </td>
+            <td>  {{ absence.status }}  </td>
+            <td>  {{ absence_start }} </td>
+            <td>  {{ absence_stop }} </td>
+            <td>  {{ absence_link }} </td>
         </tr>
         {% endfor %}
     </table>

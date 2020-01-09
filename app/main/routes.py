@@ -5,8 +5,8 @@ from flask_babel import _, get_locale
 # from guess_language import guess_language
 from app import db
 from app.main.forms import EditProfileForm, WorkForm, ServiceForm, \
-    AbsenseForm, OncallForm, NonWorkingDaysForm
-from app.models import User, Work, Service, Absense, Oncall, NonWorkingDays
+    AbsenceForm, OncallForm, NonWorkingDaysForm
+from app.models import User, Work, Service, Absence, Oncall, NonWorkingDays
 from app.main import bp
 from calendar import Calendar
 from datetime import datetime, date, timedelta
@@ -233,7 +233,7 @@ def service_add():
     form = ServiceForm()
 
     if form.validate_on_submit():
-        service = Service(name=form.name.data)
+        service = Service(name=form.name.data,color=form.color.data)
         db.session.add(service)
         db.session.commit()
         flash(_('Service have been saved.'))
@@ -421,78 +421,78 @@ def work_list():
                            prev_url=prev_url)
 
 
-@bp.route('/absense/add', methods=['GET', 'POST'])
+@bp.route('/absence/add', methods=['GET', 'POST'])
 @login_required
-def absense_add():
-    form = AbsenseForm()
+def absence_add():
+    form = AbsenceForm()
     page = request.args.get('page', 1, type=int)
 
     form.username.choices = [(u.username, u.username)
                              for u in User.query.all()]
 
-    absense = Absense.query.order_by(Absense.start).paginate(
+    absence = Absence.query.order_by(Absence.start).paginate(
               page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=absense.next_num) \
-        if absense.has_next else None
-    prev_url = url_for('main.index', page=absense.prev_num) \
-        if absense.has_prev else None
+    next_url = url_for('main.index', page=absence.next_num) \
+        if absence.has_next else None
+    prev_url = url_for('main.index', page=absence.prev_num) \
+        if absence.has_prev else None
 
     if request.method == 'POST' and form.validate_on_submit():
-        absense = Absense(start=form.start.data,
+        absence = Absence(start=form.start.data,
                     stop=form.stop.data,
                     username=form.username.data,
                     status=form.status.data)
-        db.session.add(absense)
+        db.session.add(absence)
         db.session.commit()
-        flash(_('New absense is now posted!'))
+        flash(_('New absence is now posted!'))
         print("rocket enabled?: %s" % current_app.config['ROCKET_ENABLED'])
         if current_app.config['ROCKET_ENABLED']:
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-            rocket.chat_post_message('new absense: %s\t%s\t%s\t@%s ' % (
-                                 absense.start,absense.stop,absense.status,
-                                 absense.username),
+            rocket.chat_post_message('new absence: %s\t%s\t%s\t@%s ' % (
+                                 absence.start,absence.stop,absence.status,
+                                 absence.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
 
         return redirect(url_for('main.index'))
     else:
-        return render_template('absense.html', title=_('Add absense'),
-                               allabsense=absense.items, form=form,
+        return render_template('absence.html', title=_('Add absence'),
+                               allabsence=absence.items, form=form,
                                next_url=next_url, prev_url=prev_url)
 
 
-@bp.route('/absense/edit/', methods=['GET', 'POST'])
+@bp.route('/absence/edit/', methods=['GET', 'POST'])
 @login_required
-def absense_edit():
+def absence_edit():
 
-    absenseid = request.args.get('absense')
-    absense = Absense.query.get(absenseid)
+    absenceid = request.args.get('absence')
+    absence = Absence.query.get(absenceid)
 
-    if absense is None:
-        render_template('service.html', title=_('absense is not defined'))
+    if absence is None:
+        render_template('service.html', title=_('absence is not defined'))
 
-    form = AbsenseForm(formdata=request.form, obj=absense)
+    form = AbsenceForm(formdata=request.form, obj=absence)
     form.username.choices = [(u.username, u.username)
                              for u in User.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
-        rocket_msg_from = 'edit of absense from: \n%s\t%s\t%s\t@%s' % (absense.start,
-                           absense.stop, absense.status, absense.username)
+        rocket_msg_from = 'edit of absence from: \n%s\t%s\t%s\t@%s' % (absence.start,
+                           absence.stop, absence.status, absence.username)
 
-        form.populate_obj(absense)
+        form.populate_obj(absence)
         db.session.commit()
         flash(_('Your changes have been saved.'))
         if current_app.config['ROCKET_ENABLED']:
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-            rocket_msg_to = 'to: \n%s\t%s\t%s\t@%s ' % (absense.start,
-                                                    absense.stop,
-                                                    absense.status,
-                                                    absense.username)
+            rocket_msg_to = 'to: \n%s\t%s\t%s\t@%s ' % (absence.start,
+                                                    absence.stop,
+                                                    absence.status,
+                                                    absence.username)
             rocket.chat_post_message("%s\n%s\n\nby: %s" % (rocket_msg_from,
                                 rocket_msg_to,
                                 current_user.username),
@@ -502,31 +502,31 @@ def absense_edit():
         return redirect(url_for('main.index'))
 
     else:
-        return render_template('index.html', title=_('Edit absense'),
+        return render_template('index.html', title=_('Edit absence'),
                                form=form)
 
 
-@bp.route('/absense/list/', methods=['GET', 'POST'])
+@bp.route('/absence/list/', methods=['GET', 'POST'])
 @login_required
-def absense_list():
+def absence_list():
 
     page = request.args.get('page', 1, type=int)
     username = request.args.get('username')
 
     if username is not None:
-        absense = Absense.query.filter_by(username=username).paginate(
+        absence = Absence.query.filter_by(username=username).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     else:
-        absense = Absense.query.order_by(Absense.start).paginate(
+        absence = Absence.query.order_by(Absence.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=absense.next_num) \
-        if absense.has_next else None
-    prev_url = url_for('main.index', page=absense.prev_num) \
-        if absense.has_prev else None
+    next_url = url_for('main.index', page=absence.next_num) \
+        if absence.has_next else None
+    prev_url = url_for('main.index', page=absence.prev_num) \
+        if absence.has_prev else None
 
-    return render_template('absense.html', title=_('absense'),
-                           allabsense=absense.items, next_url=next_url,
+    return render_template('absence.html', title=_('absence'),
+                           allabsence=absence.items, next_url=next_url,
                            prev_url=prev_url)
 
 
