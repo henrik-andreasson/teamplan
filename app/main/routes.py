@@ -13,10 +13,6 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
-from icalendar import  vCalAddress, vText, Event
-from icalendar import Calendar as icale
-import pytz
-
 
 @bp.before_app_request
 def before_request():
@@ -100,12 +96,13 @@ def index():
     next_month = selected_month + relativedelta.relativedelta(months=1)
     prev_month = selected_month + relativedelta.relativedelta(months=-1)
 
-    calendar = Calendar().monthdayscalendar(selected_month.year, selected_month.month)
+    calendar = Calendar().monthdayscalendar(selected_month.year,
+                                            selected_month.month)
     display_month = '{:02d}'.format(selected_month.month)
     display_year = '{:02d}'.format(selected_month.year)
     working_days_in_month = 0
     non_working_days_in_month = 0
-    working_days = [ 0, 1, 2, 3, 4, 5]
+    working_days = [0, 1, 2, 3, 4, 5]
 
     mon_week = 0
     for week in calendar:
@@ -123,7 +120,6 @@ def index():
                 if weekday in working_days:
                     working_days_in_month += 1
 
-
                 display_day = '{:02d}'.format(day)
                 day_info = {'display_day': display_day, 'week_day': weekday}
 
@@ -133,9 +129,9 @@ def index():
                                                   display_day)
                 if service is not None:
                     work = Work.query.filter(Work.service == service,
-                                            func.datetime(Work.start) > date_min,
-                                            func.datetime(Work.stop) < date_max
-                                            ).order_by(Work.service)
+                                             func.datetime(Work.start) > date_min,
+                                             func.datetime(Work.stop) < date_max
+                                             ).order_by(Work.service)
 
                     oncall = Oncall.query.filter( (Oncall.service == service) &
                                                   (func.datetime(Oncall.start) > date_min) &
@@ -165,10 +161,11 @@ def index():
 # FIXME: if a nonworkingday is already on a Saturday/Sunday it should not be counted
                 nonworkingdays = NonWorkingDays.query.filter( (func.datetime(NonWorkingDays.start) > date_min ) &
                                                               (func.datetime(NonWorkingDays.start) < date_max )
-                                                ).all()
+                                                              ).all()
                 non_working_days_in_month += len(nonworkingdays)
 
-                week_date = date(selected_month.year, selected_month.month, day)
+                week_date = date(selected_month.year,
+                                 selected_month.month, day)
                 day_info['week'] = week_date.isocalendar()[1]
                 day_info['work'] = work
                 day_info['oncall'] = oncall
@@ -191,7 +188,7 @@ def index():
     prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
 
     print("selected month: %s" % selected_month)
-    stats=service_stat_month(selected_month,service,username,month_info)
+    stats = service_stat_month(selected_month, service, username, month_info)
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
@@ -223,10 +220,8 @@ def user(username):
     page = request.args.get('page', 1, type=int)
     users_work = Work.query.filter(Work.username == username).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('main.user', username=user.username,
-                       page=users_work.next_num) if users_work.has_next else None
-    prev_url = url_for('main.user', username=user.username,
-                       page=users_work.prev_num) if users_work.has_prev else None
+    next_url = url_for('main.user', username=user.username, page=users_work.next_num) if users_work.has_next else None
+    prev_url = url_for('main.user', username=user.username, page=users_work.prev_num) if users_work.has_prev else None
     return render_template('user.html', user=user, allwork=users_work.items,
                            next_url=next_url, prev_url=prev_url)
 
@@ -330,16 +325,17 @@ def work_add():
         db.session.commit()
         flash(_('New work is now posted!'))
 
-        new_work_mess = 'new work: %s\t%s\t%s\t@%s\nby %s\n ' % (work.start,
-                         work.stop, work.service,
+        new_work_mess = 'new work: %s\t%s\t%s\t@%s\nby %s\n ' % (
+                         work.start, work.stop, work.service,
                          work.username, current_user.username)
         if current_app.config['ROCKET_ENABLED']:
             rocket = RocketChat(current_app.config['ROCKET_USER'],
-                            current_app.config['ROCKET_PASS'],
-                            server_url=current_app.config['ROCKET_URL'])
-            rocket.chat_post_message(new_work_mess,
-                                 channel=current_app.config['ROCKET_CHANNEL']
-                                 ).json()
+                                current_app.config['ROCKET_PASS'],
+                                server_url=current_app.config['ROCKET_URL'])
+            rocket.chat_post_message(
+             new_work_mess,
+             channel=current_app.config['ROCKET_CHANNEL']
+             ).json()
 
         return redirect(url_for('main.index'))
     else:
@@ -741,40 +737,3 @@ def nonworkingdays_list():
     return render_template('nonworkingdays.html', title=_('nonworkingdays'),
                            allnwd=nonworkingdays.items, next_url=next_url,
                            prev_url=prev_url)
-
-
-
-@bp.route('/calendar/')
-@login_required
-def calendar():
-
-
-    work = Work.query.all()
-
-
-    cal = icale()
-
-#    cal.add('prodid', '-//My calendar product//schma.cs//')
-#    cal.add('version', '2.0')
-
-    for w in work:
-        event = Event()
-        event.add('summary', "%s@%s" % (w.username, w.service))
-        event.add('dtstart', w.start)
-        event.add('dtend', w.stop)
-        event.add('dtstamp', w.stop)
-
-        organizer = vCalAddress('MAILTO:schema@cgi.com')
-        organizer.params['cn'] = vText('Schema system')
-        event['organizer'] = organizer
-
-        attendee = vCalAddress('MAILTO:%s@example.com' % w. username)
-        attendee.params['cn'] = vText(w.username)
-        attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
-        event.add('attendee', attendee, encode=0)
-
-        cal.add_component(event)
-
-    response = current_app.make_response(cal.to_ical())
-    response.headers["Content-Disposition"] = "attachment; filename=calendar.ics"
-    return response
