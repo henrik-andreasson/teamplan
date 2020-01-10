@@ -191,14 +191,11 @@ def index():
     stats = service_stat_month(selected_month, service, username, month_info)
 
 # bar chart
-    labels = []
-    values = []
+    bar_labels = []
+    bar_values = []
     for u in stats:
-        labels.append(u['username'])
-        values.append(u['user_work_percent'])
-
-    bar_labels=labels
-    bar_values=values
+        bar_labels.append(u['username'])
+        bar_values.append(u['user_work_percent'])
 
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
