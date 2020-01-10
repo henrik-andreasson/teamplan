@@ -1,6 +1,6 @@
 from app.api import bp
 from flask import jsonify, current_app
-from app.models import Work, User, Service
+from app.models import User, Work, Service, Absence, Oncall, NonWorkingDays
 from flask import url_for
 from app import db
 from app.api.errors import bad_request
