@@ -189,12 +189,25 @@ def index():
 
     print("selected month: %s" % selected_month)
     stats = service_stat_month(selected_month, service, username, month_info)
+
+# bar chart
+    labels = []
+    values = []
+    for u in stats:
+        labels.append(u['username'])
+        values.append(u['user_work_hrs'])
+
+    bar_labels=labels
+    bar_values=values
+
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
                            prev_url=prev_url, selected_month=month_str,
                            oncall=oncall,
-                           nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'])
+                           nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'],
+                           max=100, labels=bar_labels, values=bar_values)
+
 
 
 @bp.route('/explore')
@@ -737,3 +750,31 @@ def nonworkingdays_list():
     return render_template('nonworkingdays.html', title=_('nonworkingdays'),
                            allnwd=nonworkingdays.items, next_url=next_url,
                            prev_url=prev_url)
+
+
+@bp.route('/chart', methods=['GET', 'POST'])
+@login_required
+def chart():
+
+
+    labels = [
+        'JAN', 'FEB', 'MAR', 'APR',
+        'MAY', 'JUN', 'JUL', 'AUG',
+        'SEP', 'OCT', 'NOV', 'DEC'
+        ]
+
+    values = [
+        967.67, 1190.89, 1079.75, 1349.19,
+        2328.91, 2504.28, 2873.83, 4764.87,
+        4349.29, 6458.30, 9907, 16297
+        ]
+
+
+
+    labels = []
+    for u in User.query.all():
+        labels.append(u.username)
+
+    bar_labels=labels
+    bar_values=values
+    return render_template('bar_chart.html', title='Bitcoin Monthly Price in USD', max=17000, labels=bar_labels, values=bar_values)
