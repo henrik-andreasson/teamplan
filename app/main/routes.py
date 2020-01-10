@@ -195,7 +195,7 @@ def index():
     bar_values = []
     for u in stats:
         bar_labels.append(u['username'])
-        bar_values.append(u['user_work_percent'])
+        bar_values.append(u['user_all_work'])
 
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
@@ -203,7 +203,8 @@ def index():
                            prev_url=prev_url, selected_month=month_str,
                            oncall=oncall,
                            nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'],
-                           max=100, labels=bar_labels, values=bar_values)
+                           max=month_info['working_hours_in_month'],
+                           labels=bar_labels, values=bar_values)
 
 
 
