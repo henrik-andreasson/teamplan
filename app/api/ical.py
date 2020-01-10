@@ -6,7 +6,7 @@ from app import db
 from app.api.errors import bad_request
 from flask import request
 from app.api.auth import basic_auth
-from icalendar import  vCalAddress, vText, Event
+from icalendar import  vCalAddress, vText, Event, Alarm
 from icalendar import Calendar as icale
 import pytz
 from datetime import datetime, date, timedelta
