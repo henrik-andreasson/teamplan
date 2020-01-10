@@ -195,7 +195,7 @@ def index():
     bar_values = []
     for u in stats:
         bar_labels.append(u['username'])
-        bar_values.append(u['user_all_work'])
+        bar_values.append(u['user_work_hrs'])
 
     return render_template('month.html', title=_('Month'), month=output_month,
                            users=users, services=services, stats=stats,
