@@ -195,7 +195,7 @@ def index():
     values = []
     for u in stats:
         labels.append(u['username'])
-        values.append(u['user_work_hrs'])
+        values.append(u['user_work_percent'])
 
     bar_labels=labels
     bar_values=values
