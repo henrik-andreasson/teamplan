@@ -86,8 +86,6 @@ def ical():
         attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
         event.add('attendee', attendee, encode=0)
 
-        cal.add_component(event)
-
         alarm = Alarm()
         alarm.add("action", "DISPLAY")
         alarm.add('description', "Reminder")
