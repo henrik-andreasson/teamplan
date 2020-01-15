@@ -12,6 +12,7 @@ from rocketchat_API.rocketchat import RocketChat
 
 
 @bp.route('/work', methods=['POST'])
+@token_auth.login_required
 def create_work():
     data = request.get_json() or {}
     if 'start' not in data or 'stop' not in data or \
