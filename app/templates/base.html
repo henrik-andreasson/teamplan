@@ -18,20 +18,20 @@
             </div>
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                    <li><a href="{{ url_for('main.index') }}">{{ _('Home') }}</a></li>
-                    <li><a href="{{ url_for('main.explore') }}">{{ _('Explore') }}</a></li>
-                    <li><a href="{{ url_for('main.work_add') }}">{{ _('Work') }}</a></li>
-                    <li><a href="{{ url_for('main.oncall_add') }}">{{ _('Oncall') }}</a></li>
-                    <li><a href="{{ url_for('main.service_add') }}">{{ _('Service') }}</a></li>
-                    <li><a href="{{ url_for('main.absence_add') }}">{{ _('Absence') }}</a></li>
-                    <li><a href="{{ url_for('main.nonworkingdays_add') }}">{{ _('Non Working Days') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.index') }}">{{ _('Home') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.explore') }}">{{ _('Explore') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.work_add') }}">{{ _('Work') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.oncall_add') }}">{{ _('Oncall') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.service_add') }}">{{ _('Service') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.absence_add') }}">{{ _('Absence') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.nonworkingdays_add') }}">{{ _('Non Working Days') }}</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
-                    <li><a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a></li>
                     {% else %}
-                    <li><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
-                    <li><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
                     {% endif %}
                 </ul>
             </div>

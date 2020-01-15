@@ -33,7 +33,7 @@
             {{ _('Users') }}
         </td>
         <td>
-          <a href="{{ url_for('main.index', month=selected_month)}}">
+          <a href="{{ url_for('main.index', month=selected_month, username='Everybody')}}">
             {{ _('Everybody') }}    </a>
         </td>
 
@@ -45,7 +45,12 @@
         </a>
       {% endset %}
 
-        <td>    {{ user_link }}          </td>
+      {%if month_info['selected_user'] == user.username %}
+        <td style="background: #AAAAAA">
+      {% else %}
+        <td>
+      {% endif %}
+            {{ user_link }}          </td>
 
     {% endfor %}
       </tr>
@@ -55,7 +60,7 @@
         </td>
 
         <td>
-          <a href="{{ url_for('main.index', month=selected_month)}}">
+          <a href="{{ url_for('main.index', month=selected_month, service='Everybody')}}">
             {{ _('Everybody') }}    </a>
         </td>
 
@@ -66,7 +71,12 @@
           {{ service.name }}
         </a>
       {% endset %}
+
+            {%if month_info['selected_service'] == service.name %}
+              <td style="background: #AAAAAA">
+            {% else %}
               <td>
+            {% endif %}
                 <div style="background: {{service.color}}">
                   {{ service_link }}
                 </div>
@@ -125,23 +135,24 @@
 
           {% for day in week %}
             <td>
-              <div class="list-group">
+              <div class="list-group dropdown">
                   <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item">
                     {{ day['display_day'] }}
                   </a>
-                  {% for wrk in day['work'] %}
+
+                  {% for w in day['work'] %}
 
                 {% set hr_start %}
-                      {{ wrk.start.strftime("(%H:%M)") }}
+                      {{ w.start.strftime("(%H:%M)") }}
                 {% endset %}
                 {% set hr_stop %}
-                      {{ wrk.stop.strftime("(%H:%M)") }}
+                      {{ w.stop.strftime("(%H:%M)") }}
                 {% endset %}
 
 
-                <a href="{{ url_for('main.work_edit', work=wrk.id) }}" class="list-group-item" style="background: {{wrk.color}}">
+                <a href="{{ url_for('main.work_edit', work=w.name) }}" class="list-group-item" style="background: {{w.color}}">
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
-                                        username=wrk.username, service=wrk.service) }}</h4></div>
+                                        username=w.username, service=w.service.name) }}</h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
                                         hr_start=hr_start, hr_stop=hr_stop) }}</p></div>
                 </a>
@@ -231,15 +242,17 @@
         <td> {{ _('Working hours in month') }}: </td>
         <td> {{ month_info['working_hours_in_month'] }} </td>
       </tr>
-      <tr>
-        <td> {{ _('Working seconds in month') }}: </td>
-        <td> {{ month_info['working_sec_in_month'] }} </td>
-      </tr>
-
     </table>
 
     <canvas id="chart" width="800" height="700"></canvas>
 
+<hr>
+
+debug:  <br>
+
+selected_month: {{ month_info['selected_month'] }} <br>
+selected_service: {{ month_info['selected_service'] }} <br>
+selected_user: {{ month_info['selected_user'] }} <br>
 
 {% endblock %}
 

@@ -9,7 +9,16 @@ from flask import url_for
 import base64
 from datetime import datetime, timedelta
 import os
+from sqlalchemy.orm import backref, relationship
+from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
 
+Base = declarative_base()
+
+service_user = db.Table('service_user',
+    db.Column('service_id', db.Integer, db.ForeignKey('service.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+)
 
 class PaginatedAPIMixin(object):
     @staticmethod
@@ -35,7 +44,33 @@ class PaginatedAPIMixin(object):
         return data
 
 
+class Service(PaginatedAPIMixin, db.Model):
+    __tablename__ = "service"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(140))
+    updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    color = db.Column(db.String(140))
+    users = db.relationship('User', secondary=service_user)
+    work = db.relationship("Work")
+    def __repr__(self):
+        return '<Service {}>'.format(self.name)
+
+    def to_dict(self):
+        data = {
+            'id': self.id,
+            'name': self.name,
+            'color': self.color,
+        }
+        return data
+
+    def from_dict(self, data, new_service=False):
+        for field in ['name', 'color']:
+            if field in data:
+                setattr(self, field, data[field])
+
+
 class User(PaginatedAPIMixin, UserMixin, db.Model):
+    __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
@@ -44,6 +79,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -115,24 +151,26 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             return None
         return user
 
-
+ 
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
 
 
 class Work(PaginatedAPIMixin, db.Model):
+    __tablename__ = "work"
     id = db.Column(db.Integer, primary_key=True)
-# user_id = db.Column(db.Integer, db.ForeignKey(User.id))
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     username = db.Column(db.String(140))
-    service = db.Column(db.String(140))
     status = db.Column(db.String(140))
     color = db.Column(db.String(140))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
+    service = db.relationship('Service')
+    #    service = db.Column(db.String(140))
 
     def __repr__(self):
-        return '<Work {}>'.format(self.body)
+        return '<Work {}>'.format(self.service)
 
     def to_dict(self, include_email=False):
         data = {
@@ -155,15 +193,6 @@ class Work(PaginatedAPIMixin, db.Model):
                 else:
                     setattr(self, field, data[field])
 
-
-class Service(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(140))
-    updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    color = db.Column(db.String(140))
-
-    def __repr__(self):
-        return '<Service {}>'.format(self.body)
 
 class Absence(db.Model):
     id = db.Column(db.Integer, primary_key=True)

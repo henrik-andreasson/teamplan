@@ -8,6 +8,10 @@
     <tr>
         <td>
           {{ _('%(service)s', service=service_link ) }}
+          {{_('Users:')}}
+          {% for u in service.users %}
+            {{u.username}}
+          {% endfor %}
         </td>
     </tr>
 </table>

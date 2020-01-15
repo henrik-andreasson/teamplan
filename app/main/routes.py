@@ -1,5 +1,5 @@
 from flask import render_template, flash, redirect, url_for, request, g, \
-    current_app
+    current_app, session
 from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 # from guess_language import guess_language
@@ -50,7 +50,7 @@ def service_stat_month(month,service=None,user=None,month_info=None):
         user_work_hrs=timedelta(days=0,seconds=0)
 
         for s in services:
-            work_list = Work.query.filter(Work.service == s.name,
+            work_list = Work.query.filter(Work.service_id == s.id,
                                           Work.username == u.username,
                                           func.datetime(Work.start) > date_start,
                                           func.datetime(Work.stop) < date_stop
@@ -87,12 +87,38 @@ def index():
     service = request.args.get('service')
     month = request.args.get('month')
 
-    if month is None:
-        selected_month = datetime.utcnow()
-    else:
+    if month is not None:
         selected_month = datetime.strptime(month, "%Y-%m")
+        session['selected_month'] = month
+    elif 'selected_month' in session:
+        month = session['selected_month']
+        selected_month = datetime.strptime(month, "%Y-%m")
+    else:
+        selected_month = datetime.utcnow()
 
-#    print("selected month: %s" % selected_month)
+    if username is not None:
+        if 'selected_user' in session or username == "Everybody":
+            session.pop('selected_user', None)
+            username=None
+        else:
+            session['selected_user'] = username
+    elif 'selected_user' in session:
+        username = session['selected_user']
+
+    if service is not None:
+        if 'selected_service' in session or service == "Everybody":
+            session.pop('selected_service', None)
+            service=None
+        else:
+            session['selected_service'] = service
+    elif 'selected_service' in session:
+            service = session['selected_service']
+
+
+    if service is not None:
+        service_obj = Service.query.filter_by(name=service).first()
+        print("service: %s id: %s" % (service, service_obj.id))
+
     next_month = selected_month + relativedelta.relativedelta(months=1)
     prev_month = selected_month + relativedelta.relativedelta(months=-1)
 
@@ -127,11 +153,25 @@ def index():
                                                   display_day)
                 date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
                                                   display_day)
-                if service is not None:
-                    work = Work.query.filter(Work.service == service,
-                                             func.datetime(Work.start) > date_min,
-                                             func.datetime(Work.stop) < date_max
-                                             ).order_by(Work.service)
+                if service is not None and username is not None:
+                    work = Work.query.filter( (Work.service_id == service_obj.id) &
+                                              (Work.username == username) &
+                                              (func.datetime(Work.start) > date_min) &
+                                              (func.datetime(Work.stop) < date_max)
+                                            ).all()
+# TODO DONT WORK                                ).order_by(Work.service.id)
+
+                    oncall = Oncall.query.filter( (Oncall.service == service) &
+                                                  (func.datetime(Oncall.start) > date_min) &
+                                                  (func.datetime(Oncall.stop) < date_max)
+                                        ).order_by(Oncall.service)
+
+                elif service is not None:
+                    work = Work.query.filter( (Work.service_id == service_obj.id) &
+                                              (func.datetime(Work.start) > date_min) &
+                                              (func.datetime(Work.stop) < date_max)
+                                            ).all()
+# TODO DONT WORK                                ).order_by(Work.service.id)
 
                     oncall = Oncall.query.filter( (Oncall.service == service) &
                                                   (func.datetime(Oncall.start) > date_min) &
@@ -142,7 +182,8 @@ def index():
                     work = Work.query.filter(Work.username == username,
                                             func.datetime(Work.start) > date_min,
                                             func.datetime(Work.stop) < date_max
-                                            ).order_by(Work.service)
+                                ).all()
+# TODO DONT WORK                                ).order_by(Work.service.id)
 
                     oncall = Oncall.query.filter( (Oncall.username == username) &
                                                   (func.datetime(Oncall.start) > date_min ) &
@@ -152,7 +193,8 @@ def index():
                 else:
                     work = Work.query.filter(func.datetime(Work.start) > date_min,
                                 func.datetime(Work.stop) < date_max
-                                ).order_by(Work.service)
+                                ).all()
+# TODO DONT WORK                                ).order_by(Work.service.id)
 
                     oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                                   (func.datetime(Oncall.start) < date_max )
@@ -181,6 +223,9 @@ def index():
     month_info['working_days_in_month'] = working_days_in_month
     month_info['working_hours_in_month'] = working_days_in_month * 8
     month_info['working_sec_in_month'] = working_days_in_month * 8 * 60 * 60
+    month_info['selected_month'] = month_str
+    month_info['selected_service'] = service
+    month_info['selected_user'] = username
     month_info['prev'] = prev_month.strftime("%b")
     month_info['this'] = selected_month.strftime("%Y %B")
     month_info['next'] = next_month.strftime("%b")
@@ -224,10 +269,26 @@ def explore():
                            prev_url=prev_url)
 
 
+@bp.route('/test')
+@login_required
+def test():
+
+    work = Work.query.all()
+
+    for w in work:
+        print("%s" % w.service.id)
+
+    return render_template('test.html', title=_('Test'),
+                           allwork=work)
+
+
+
 @bp.route('/user/<username>')
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
+    print("user: %s services: %s" % (user.username, user.services))
+
     page = request.args.get('page', 1, type=int)
     users_work = Work.query.filter(Work.username == username).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
@@ -242,9 +303,15 @@ def user(username):
 def service_add():
 
     form = ServiceForm()
+    form.users.choices = [(u.username, u.username)
+                             for u in User.query.all()]
 
     if form.validate_on_submit():
         service = Service(name=form.name.data,color=form.color.data)
+        for u in form.users.data:
+            user = User.query.filter_by(username=u).first()
+            print("Adding: User: %s to: %s" % (user.username,service.name))
+            service.users.append(user)
         db.session.add(service)
         db.session.commit()
         flash(_('Service have been saved.'))
@@ -263,19 +330,27 @@ def service_add():
 @login_required
 def service_edit():
 
-    form = ServiceForm()
-
     servicename = request.args.get('name')
-    print("id: %s" % servicename)
     service = Service.query.filter_by(name=servicename).first()
 
     if service is None:
         render_template('service.html', title=_('Service is not defined'))
 
     form = ServiceForm(formdata=request.form, obj=service)
+# TODO select the previously selected users: service.users
+    form.users.choices = [(u.username, u.username)
+                             for u in User.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
-        form.populate_obj(service)
+#        form.populate_obj(service)
+# TODO remove not selected users ...
+        for u in form.users.data:
+            user = User.query.filter_by(username=u).first()
+            print("Adding: User: %s to: %s" % (user.username,service.name))
+            service.users.append(user)
+        service.name = form.name.data
+        service.color = form.color.data
+
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.service_list'))
@@ -319,19 +394,42 @@ def edit_profile():
 def work_add():
     form = WorkForm()
 
-    form.username.choices = [(u.username, u.username)
+    if 'selected_user' in session:
+#        print("session has user selected: %s" % session['selected_user'])
+        form.username.default = session['selected_user']
+        user = User.query.filter_by(username=session['selected_user']).first()
+        form.username.choices = [(user.username, user.username)]
+        form.service.choices = []
+        for s in Service.query.all():
+            for serviceuser in s.users:
+                if serviceuser.username == user.username:
+                    form.service.choices.extend([(s.name, s.name)])
+
+
+    elif 'selected_service' in session:
+#        print("session has service selected: %s" % session['selected_service'])
+        service = Service.query.filter_by(name=session['selected_service']).first()
+        form.service.choices = [(service.name, service.name)]
+        form.username.choices = [(u.username, u.username)
+                             for u in service.users]
+
+    else:
+        form.service.choices = [(s.name, s.name) for s in Service.query.all()]
+        form.username.choices = [(u.username, u.username)
                              for u in User.query.all()]
 
-    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
+
+    page = request.args.get('page', 1, type=int)
+
 
     if request.method == 'POST' and form.validate_on_submit():
         service = Service.query.filter_by(name=form.service.data).first()
         work = Work(start=form.start.data,
                     stop=form.stop.data,
                     username=form.username.data,
-                    service=form.service.data,
                     color=service.color,
                     status=form.status.data)
+        work.service = service
         db.session.add(work)
         db.session.commit()
         flash(_('New work is now posted!'))
@@ -349,6 +447,7 @@ def work_add():
              ).json()
 
         return redirect(url_for('main.index'))
+
     else:
         day = request.args.get('day')
         month = request.args.get('month')
@@ -358,8 +457,18 @@ def work_add():
 
             form.start.data =  datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
             form.stop.data =  datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
+
+        allwork = Work.query.order_by(Work.start).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+
+        next_url = url_for('main.index', page=allwork.next_num) \
+            if allwork.has_next else None
+        prev_url = url_for('main.index', page=allwork.prev_num) \
+            if allwork.has_prev else None
+
         return render_template('work.html', title=_('Add Work'),
-                               form=form)
+                               form=form, allwork=allwork.items, next_url=next_url,
+                               prev_url=prev_url)
 
 
 @bp.route('/work/edit/', methods=['GET', 'POST'])
@@ -406,16 +515,17 @@ def work_list():
 
     page = request.args.get('page', 1, type=int)
     username = request.args.get('username')
-    service = request.args.get('service')
+    servicename = request.args.get('service')
+    service = Service.query.filter_by(name=servicename).first()
 
     if username is not None:
         work = Work.query.filter_by(username=username).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     elif service is not None:
-        work = Work.query.filter_by(service=service).paginate(
+        work = Work.query.filter_by(service=service.name).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     else:
-        work = Work.query.order_by(Work.date).paginate(
+        work = Work.query.order_by(Work.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
     next_url = url_for('main.index', page=work.next_num) \
@@ -423,9 +533,6 @@ def work_list():
     prev_url = url_for('main.index', page=work.prev_num) \
         if work.has_prev else None
 
-    for i in work.items:
-        i.start = i.start.strftime("%H:%M")
-        i.stop = i.stop.strftime("%H:%M")
 
     return render_template('work.html', title=_('Work'),
                            allwork=work.items, next_url=next_url,

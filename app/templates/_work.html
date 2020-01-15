@@ -19,7 +19,7 @@
             {% endset %}
 
             {{ _('%(username)s will work at %(service)s from %(start)s to %(stop)s edit: %(work_link)s',
-                username=work.username, service=work.service, start=work.start,
+                username=work.username, service=work.service.name, start=work.start,
                 stop=work.stop,work_link=work_link ) }}
             <br>
         </td>

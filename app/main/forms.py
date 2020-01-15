@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField, SelectField
+from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField
 from wtforms.fields.html5 import DateField, DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
@@ -26,6 +26,7 @@ class EditProfileForm(FlaskForm):
 class ServiceForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()])
     color = StringField(_l('color'), validators=[DataRequired()])
+    users = SelectMultipleField(_l('Users'), validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
 
 

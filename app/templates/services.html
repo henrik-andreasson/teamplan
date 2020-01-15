@@ -1,9 +1,43 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+
+
+<table class="table table-hover">
+    <tr>
+      <td>{{_('Service')}}</td>
+      <td>{{_('Users')}}</td>
+      <td>{{_('Color')}}</td>
+    </tr>
+
     {% for service in services %}
-        {% include '_service.html' %}
-    {% endfor %}
+
+      <tr>
+        {% set service_link %}
+          <a href="{{ url_for('main.service_edit', name=service.name) }}">
+            {{ service.name }}
+          </a>
+        {% endset %}
+
+        <td>
+              {{ _('%(service)s', service=service_link ) }}
+        </td>
+        <td>
+              {% for u in service.users %}
+                {{u.username}}
+              {% endfor %}
+            </td>
+        <td>
+          <div style="background: {{service.color}}">
+              {{ service.color }}
+           </div>
+        </td>
+
+        </tr>
+        {% endfor %}
+
+    </table>
+
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
