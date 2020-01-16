@@ -180,6 +180,27 @@
 
               {% endfor %}
 
+<!-- absence -->
+              {% for ab in day['absence'] %}
+
+                {% set ab_start %}
+                  {{ ab.start.strftime("(%H:%M)") }}
+                {% endset %}
+                {% set ab_stop %}
+                  {{ ab.stop.strftime("(%H:%M)") }}
+                {% endset %}
+
+
+                <a href="{{ url_for('main.absence_edit', absence=ab.id) }}" class="list-group-item" style="background: {{absence_color}}">
+                    <div class="text-nowrap"><h4 class="text-nowrap" id="text-nowrap">{{ _('%(name)s@off', name=ab.username) }}</h4></div>
+                    <div class="text-nowrap"><p class="list-group-item-text  id="text-nowrap"">{{ _('%(start)s - %(stop)s', start=ab_start, stop=ab_stop) }}</p></div>
+                </a>
+
+
+              {% endfor %}
+
+
+
             </div>
 
             </td>

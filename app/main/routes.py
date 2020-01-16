@@ -158,8 +158,7 @@ def index():
                                               (Work.username == username) &
                                               (func.datetime(Work.start) > date_min) &
                                               (func.datetime(Work.stop) < date_max)
-                                            ).all()
-# TODO DONT WORK                                ).order_by(Work.service.id)
+                                            ).order_by(Work.service_id)
 
                     oncall = Oncall.query.filter( (Oncall.service == service) &
                                                   (func.datetime(Oncall.start) > date_min) &
@@ -170,8 +169,7 @@ def index():
                     work = Work.query.filter( (Work.service_id == service_obj.id) &
                                               (func.datetime(Work.start) > date_min) &
                                               (func.datetime(Work.stop) < date_max)
-                                            ).all()
-# TODO DONT WORK                                ).order_by(Work.service.id)
+                                             ).order_by(Work.service_id)
 
                     oncall = Oncall.query.filter( (Oncall.service == service) &
                                                   (func.datetime(Oncall.start) > date_min) &
@@ -182,8 +180,12 @@ def index():
                     work = Work.query.filter(Work.username == username,
                                             func.datetime(Work.start) > date_min,
                                             func.datetime(Work.stop) < date_max
-                                ).all()
-# TODO DONT WORK                                ).order_by(Work.service.id)
+                                            ).order_by(Work.service_id)
+
+                    day_info['absence'] = Absence.query.filter(username == username,
+                                            func.datetime(Work.start) > date_min,
+                                            func.datetime(Work.stop) < date_max
+                                            ).all()
 
                     oncall = Oncall.query.filter( (Oncall.username == username) &
                                                   (func.datetime(Oncall.start) > date_min ) &
@@ -193,18 +195,22 @@ def index():
                 else:
                     work = Work.query.filter(func.datetime(Work.start) > date_min,
                                 func.datetime(Work.stop) < date_max
-                                ).all()
-# TODO DONT WORK                                ).order_by(Work.service.id)
+                                ).order_by(Work.service_id)
 
                     oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                                   (func.datetime(Oncall.start) < date_max )
                                                 ).order_by(Oncall.service)
 
-# FIXME: if a nonworkingday is already on a Saturday/Sunday it should not be counted
+                    day_info['absence'] = Absence.query.filter(func.datetime(Work.start) > date_min,
+                                            func.datetime(Work.stop) < date_max
+                                            ).all()
+
                 nonworkingdays = NonWorkingDays.query.filter( (func.datetime(NonWorkingDays.start) > date_min ) &
                                                               (func.datetime(NonWorkingDays.start) < date_max )
-                                                              ).all()
-                non_working_days_in_month += len(nonworkingdays)
+                                                            ).all()
+                if weekday not in working_days:
+                    # TODO does not accounts for half days off
+                    non_working_days_in_month += 1
 
                 week_date = date(selected_month.year,
                                  selected_month.month, day)
@@ -247,6 +253,7 @@ def index():
                            month_info=month_info, next_url=next_url,
                            prev_url=prev_url, selected_month=month_str,
                            oncall=oncall,
+                           absence_color=current_app.config['ABSENCE_COLOR'],
                            nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'],
                            max=month_info['working_hours_in_month'],
                            labels=bar_labels, values=bar_values)
@@ -516,13 +523,13 @@ def work_list():
     page = request.args.get('page', 1, type=int)
     username = request.args.get('username')
     servicename = request.args.get('service')
-    service = Service.query.filter_by(name=servicename).first()
+    s = Service.query.filter_by(name=servicename).first()
 
     if username is not None:
         work = Work.query.filter_by(username=username).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
-    elif service is not None:
-        work = Work.query.filter_by(service=service.name).paginate(
+    elif s is not None:
+        work = Work.query.filter_by(service_id=s.id).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     else:
         work = Work.query.order_by(Work.start).paginate(
