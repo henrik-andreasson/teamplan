@@ -30,12 +30,13 @@ def ical():
     date_max = next_month.strftime("%Y-%m-%d 23:59:00")
 
     print("search range: %s->%s" %(date_min,date_max))
+    s = Service.query.filter_by(name=service).first()
 
     if service is not None:
-        work = Work.query.filter(Work.service == service,
+        work = Work.query.filter(Work.service_id == s.name,
                                 func.datetime(Work.start) > date_min,
                                 func.datetime(Work.start) < date_max
-                                ).order_by(Work.service)
+                                ).order_by(Work.service_id)
 
         oncall = Oncall.query.filter( (Oncall.service == service) &
                                       (func.datetime(Oncall.start) > date_min) &
@@ -46,7 +47,7 @@ def ical():
         work = Work.query.filter(Work.username == username,
                                 func.datetime(Work.start) > date_min,
                                 func.datetime(Work.start) < date_max
-                                ).order_by(Work.service)
+                                ).order_by(Work.service_id)
 
         oncall = Oncall.query.filter( (Oncall.username == username) &
                                       (func.datetime(Oncall.start) > date_min ) &
@@ -56,7 +57,7 @@ def ical():
     else:
         work = Work.query.filter(func.datetime(Work.start) > date_min,
                         func.datetime(Work.start) < date_max
-                        ).order_by(Work.service)
+                        ).order_by(Work.service_id)
 
         oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                   (func.datetime(Oncall.start) < date_max )
@@ -70,9 +71,9 @@ def ical():
 #    cal.add('version', '2.0')
 
     for w in work:
-        user = User.query.filter(User.username == w.username).first()
+        user = User.query.filter_by(username = w.username).first()
         event = Event()
-        event.add('summary', "%s@%s" % (w.username, w.service))
+        event.add('summary', "%s@%s" % (w.username, w.service.name))
         event.add('dtstart', w.start)
         event.add('dtend', w.stop)
         event.add('dtstamp', w.stop)
