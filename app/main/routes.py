@@ -85,6 +85,7 @@ def index():
     services = Service.query.order_by(Service.name)
     username = request.args.get('username')
     service = request.args.get('service')
+    showabsence = request.args.get('absence')
     month = request.args.get('month')
 
     if month is not None:
@@ -97,7 +98,7 @@ def index():
         selected_month = datetime.utcnow()
 
     if username is not None:
-        if 'selected_user' in session or username == "Everybody":
+        if 'selected_user' in session:
             session.pop('selected_user', None)
             username=None
         else:
@@ -106,7 +107,7 @@ def index():
         username = session['selected_user']
 
     if service is not None:
-        if 'selected_service' in session or service == "Everybody":
+        if 'selected_service' in session:
             session.pop('selected_service', None)
             service=None
         else:
@@ -114,6 +115,14 @@ def index():
     elif 'selected_service' in session:
             service = session['selected_service']
 
+    if showabsence is not None:
+        if 'showabsence' in session:
+            session.pop('showabsence', None)
+            showabsence=None
+        else:
+            session['showabsence'] = "show"
+    elif 'showabsence' in session:
+            showabsence = session['showabsence']
 
     if service is not None:
         service_obj = Service.query.filter_by(name=service).first()
@@ -247,6 +256,7 @@ def index():
     month_info['selected_month'] = month_str
     month_info['selected_service'] = service
     month_info['selected_user'] = username
+    month_info['showabsence'] = showabsence
     month_info['prev'] = prev_month.strftime("%b")
     month_info['this'] = selected_month.strftime("%Y %B")
     month_info['next'] = next_month.strftime("%b")
@@ -480,17 +490,11 @@ def work_add():
             form.start.data =  datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
             form.stop.data =  datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
 
-        allwork = Work.query.order_by(Work.start).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
-
-        next_url = url_for('main.index', page=allwork.next_num) \
-            if allwork.has_next else None
-        prev_url = url_for('main.index', page=allwork.prev_num) \
-            if allwork.has_prev else None
+        # TODO figure out how to show work added by the current user this session
+        allwork = Work.query.order_by(Work.start).limit(10)
 
         return render_template('work.html', title=_('Add Work'),
-                               form=form, allwork=allwork.items, next_url=next_url,
-                               prev_url=prev_url)
+                               form=form, allwork=allwork)
 
 
 @bp.route('/work/edit/', methods=['GET', 'POST'])

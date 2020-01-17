@@ -24,6 +24,7 @@ class PaginatedAPIMixin(object):
     @staticmethod
     def to_collection_dict(query, page, per_page, endpoint, **kwargs):
         resources = query.paginate(page, per_page, False)
+        print("page: %s per_page: %s endpoint %s" % (page, per_page, endpoint))
         data = {
             'items': [item.to_dict() for item in resources.items],
             '_meta': {
@@ -151,7 +152,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             return None
         return user
 
- 
+
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
@@ -170,16 +171,19 @@ class Work(PaginatedAPIMixin, db.Model):
     #    service = db.Column(db.String(140))
 
     def __repr__(self):
-        return '<Work {}>'.format(self.service)
+        return '<Work {}>'.format(self.service_id)
 
-    def to_dict(self, include_email=False):
+    def to_dict(self):
         data = {
             'id': self.id,
             'start': self.start,
             'stop': self.stop,
             'username': self.username,
-            'service': self.service,
+            'service_id': self.service_id,
             'status': self.status,
+            '_links': {
+                'self': url_for('api.get_work', id=self.id)
+            }
         }
 
         return data
