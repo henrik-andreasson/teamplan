@@ -12,6 +12,7 @@ from rocketchat_API.rocketchat import RocketChat
 
 
 @bp.route('/service', methods=['POST'])
+@token_auth.login_required
 def create_service():
     data = request.get_json() or {}
     if 'name' not in data or 'color' not in data:
