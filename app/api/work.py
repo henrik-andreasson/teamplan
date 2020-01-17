@@ -5,10 +5,10 @@ from flask import url_for
 from app import db
 from app.api.errors import bad_request
 from flask import request
-# from flask import g, abort
 from app.api.auth import token_auth
-from pprint import pprint
+from flask import g, abort
 from rocketchat_API.rocketchat import RocketChat
+from pprint import pprint
 
 
 @bp.route('/work', methods=['POST'])
@@ -45,7 +45,7 @@ def create_work():
 def get_worklist():
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 10, type=int), 100)
-    data = Work.to_collection_dict(Work.query, page, per_page, 'api.get_work')
+    data = Work.to_collection_dict(Work.query, page, per_page, 'api.get_worklist')
     return jsonify(data)
 
 
