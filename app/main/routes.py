@@ -153,6 +153,8 @@ def index():
                                                   display_day)
                 date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
                                                   display_day)
+
+                absence=[]
                 if service is not None and username is not None:
                     work = Work.query.filter( (Work.service_id == service_obj.id) &
                                               (Work.username == username) &
@@ -165,6 +167,11 @@ def index():
                                                   (func.datetime(Oncall.stop) < date_max)
                                         ).order_by(Oncall.service)
 
+                    absence = Absence.query.filter(username == username,
+                                            func.datetime(Absence.start) > date_min,
+                                            func.datetime(Absence.stop) < date_max
+                                            ).all()
+
                 elif service is not None:
                     work = Work.query.filter( (Work.service_id == service_obj.id) &
                                               (func.datetime(Work.start) > date_min) &
@@ -176,21 +183,28 @@ def index():
                                                   (func.datetime(Oncall.stop) < date_max)
                                         ).order_by(Oncall.service)
 
+                    for u in service_obj.users:
+                        absence += Absence.query.filter(username == u.username,
+                                            func.datetime(Absence.start) > date_min,
+                                            func.datetime(Absence.stop) < date_max
+                                            ).all()
+
+
                 elif username is not None:
                     work = Work.query.filter(Work.username == username,
                                             func.datetime(Work.start) > date_min,
                                             func.datetime(Work.stop) < date_max
                                             ).order_by(Work.service_id)
 
-                    day_info['absence'] = Absence.query.filter(username == username,
-                                            func.datetime(Work.start) > date_min,
-                                            func.datetime(Work.stop) < date_max
-                                            ).all()
-
                     oncall = Oncall.query.filter( (Oncall.username == username) &
                                                   (func.datetime(Oncall.start) > date_min ) &
                                                   (func.datetime(Oncall.start) < date_max )
                                                 ).order_by(Oncall.service)
+
+                    absence = Absence.query.filter(username == username,
+                                            func.datetime(Absence.start) > date_min,
+                                            func.datetime(Absence.stop) < date_max
+                                            ).all()
 
                 else:
                     work = Work.query.filter(func.datetime(Work.start) > date_min,
@@ -201,8 +215,8 @@ def index():
                                                   (func.datetime(Oncall.start) < date_max )
                                                 ).order_by(Oncall.service)
 
-                    day_info['absence'] = Absence.query.filter(func.datetime(Work.start) > date_min,
-                                            func.datetime(Work.stop) < date_max
+                    absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
+                                            func.datetime(Absence.stop) < date_max
                                             ).all()
 
                 nonworkingdays = NonWorkingDays.query.filter( (func.datetime(NonWorkingDays.start) > date_min ) &
@@ -218,7 +232,7 @@ def index():
                 day_info['work'] = work
                 day_info['oncall'] = oncall
                 day_info['nwd'] = nonworkingdays
-
+                day_info['absence'] = absence
             output_week.insert(weekday, day_info)
 
         output_month.insert(mon_week, output_week)
@@ -226,6 +240,7 @@ def index():
     month_str = selected_month.strftime("%Y-%m")
     month_info = {}
     month_info['non_working_days_in_month'] = non_working_days_in_month
+    # TODO substract non_working_days_in_month
     month_info['working_days_in_month'] = working_days_in_month
     month_info['working_hours_in_month'] = working_days_in_month * 8
     month_info['working_sec_in_month'] = working_days_in_month * 8 * 60 * 60
