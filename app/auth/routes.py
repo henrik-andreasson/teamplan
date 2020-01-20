@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, current_app
 from werkzeug.urls import url_parse
 from flask_login import login_user, logout_user, current_user
 from flask_babel import _
@@ -36,8 +36,15 @@ def logout():
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+
+    if current_app.config['OPEN_REGISTRATION'] is True:
+        if current_user.is_authenticated:
+            return redirect(url_for('main.index'))
+    else:
+        if not current_user.is_authenticated:
+            flash(_('Registration is not open, contact admin to get an account'))
+            return redirect(url_for('main.index'))
+
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)

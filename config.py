@@ -25,3 +25,4 @@ class Config(object):
     ROCKET_CHANNEL=os.environ.get('ROCKET_CHANNEL') or 'GENERAL'
     NON_WORKING_DAYS_COLOR=os.environ.get('NON_WORKING_DAYS_COLOR') or "#FF2222"
     ABSENCE_COLOR=os.environ.get('ABSENCE_COLOR') or "#AAAAAA"
+    OPEN_REGISTRATION=os.environ.get('OPEN_REGISTRATION') or False
