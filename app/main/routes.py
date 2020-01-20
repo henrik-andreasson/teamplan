@@ -421,6 +421,28 @@ def edit_profile():
                            form=form)
 
 
+@bp.route('/ical_info', methods=['GET'])
+@login_required
+def ical_info():
+    services = Service.query.all()
+    return render_template('ical_info.html', title=_('Ical Info'),
+                           user=current_user, services=services)
+
+
+@bp.route('/ical_reset_api_key', methods=['GET'])
+@login_required
+def ical_reset_api_key():
+
+    api_key = current_user.revoke_api_key()
+    api_key = current_user.get_api_key()
+
+    services = Service.query.all()
+    return render_template('ical_info.html', title=_('Ical Info'),
+                           user=current_user, services=services)
+
+
+
+
 @bp.route('/work/add', methods=['GET', 'POST'])
 @login_required
 def work_add():

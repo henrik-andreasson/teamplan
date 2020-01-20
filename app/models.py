@@ -12,6 +12,8 @@ import os
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+import uuid
+
 
 Base = declarative_base()
 
@@ -52,6 +54,7 @@ class Service(PaginatedAPIMixin, db.Model):
     updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     color = db.Column(db.String(140))
     users = db.relationship('User', secondary=service_user)
+#    manager = db.relationship('Manager', secondary=service_user)
     work = db.relationship("Work")
     def __repr__(self):
         return '<Service {}>'.format(self.name)
@@ -78,6 +81,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    api_key = db.Column(db.String(32), index=True, unique=True)
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
@@ -152,6 +156,30 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             return None
         return user
 
+    def get_api_key(self):
+        if self.api_key:
+            return self.api_key
+        self.api_key = str(uuid.uuid4())
+        db.session.add(self)
+        db.session.commit()
+        return self.api_key
+
+    def revoke_api_key(self):
+        self.api_key = None
+        db.session.add(self)
+        db.session.commit()
+        return self.api_key
+
+
+    @staticmethod
+    def check_api_key(user,api_key):
+        if user is None or user.api_key is None:
+            return False
+        elif user.api_key == api_key:
+            return True
+        else:
+            return False
+
 
 @login.user_loader
 def load_user(id):
@@ -189,7 +217,7 @@ class Work(PaginatedAPIMixin, db.Model):
         return data
 
     def from_dict(self, data, new_work=False):
-        for field in ['username', 'start', 'stop', 'service', 'status']:
+        for field in ['username', 'start', 'stop', 'service_id', 'status']:
             if field in data:
                 if field == "start" or field == "stop":
                     date = datetime.strptime(data[field], "%Y-%m-%d %H:%M")

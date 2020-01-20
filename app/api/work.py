@@ -25,6 +25,7 @@ def create_work():
         work.status = "unassigned"
 
     service = Service.query.filter_by(name=data['service']).first()
+    work.service_id = service.id
     work.color = service.color
 
     db.session.add(work)

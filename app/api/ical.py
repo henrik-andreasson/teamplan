@@ -1,5 +1,5 @@
 from app.api import bp
-from flask import jsonify, current_app
+from flask import jsonify, current_app, g
 from app.models import User, Work, Service, Absence, Oncall, NonWorkingDays
 from flask import url_for
 from app import db
@@ -12,16 +12,35 @@ import pytz
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
+from flask_login import login_manager
+from app.api.errors import error_response
 
 
 @bp.route('/ical/')
-@basic_auth.login_required
 def ical():
+
+    api_user = request.args.get('api_user')
+    api_key = request.args.get('api_key')
+
+#    fixed_api_key = "123456"
+    if api_user is None:
+        return error_response(401)
+
+    user = User.query.filter_by(username=api_user).first()
+    if user is None:
+        return error_response(401)
+
+    if api_key is None:
+        return error_response(401)
+
+    if User.check_api_key(user,api_key) is False:
+        return error_response(401)
+
+    # all ok
+    g.current_user = user
 
     username = request.args.get('username')
     service = request.args.get('service')
-
-#    work = Work.query.all()
 
     today = datetime.utcnow()
     next_month = today + relativedelta.relativedelta(months=1)
@@ -30,9 +49,9 @@ def ical():
     date_max = next_month.strftime("%Y-%m-%d 23:59:00")
 
     print("search range: %s->%s" %(date_min,date_max))
-    s = Service.query.filter_by(name=service).first()
 
     if service is not None:
+        s = Service.query.filter_by(name=service).first()
         work = Work.query.filter(Work.service_id == s.name,
                                 func.datetime(Work.start) > date_min,
                                 func.datetime(Work.start) < date_max
