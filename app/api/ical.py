@@ -14,7 +14,7 @@ from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from flask_login import login_manager
 from app.api.errors import error_response
-
+import uuid
 
 @bp.route('/ical/')
 def ical():
@@ -97,6 +97,7 @@ def ical():
         event.add('dtstart', w.start)
         event.add('dtend', w.stop)
         event.add('dtstamp', w.stop)
+        event.add('uid', str(uuid.uuid4()) + "@domain.com")
 
         organizer = vCalAddress('MAILTO:schema@cgi.com')
         organizer.params['cn'] = vText('Schema system')
