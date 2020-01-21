@@ -43,9 +43,10 @@ def ical():
     service = request.args.get('service')
 
     today = datetime.utcnow()
+    prev_month = today + relativedelta.relativedelta(months=-1)
     next_month = today + relativedelta.relativedelta(months=1)
 
-    date_min = today.strftime("%Y-%m-%d 00:00:00")
+    date_min = prev_month.strftime("%Y-%m-%d 00:00:00")
     date_max = next_month.strftime("%Y-%m-%d 23:59:00")
 
     print("search range: %s->%s" %(date_min,date_max))
