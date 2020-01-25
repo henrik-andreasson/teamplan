@@ -530,13 +530,22 @@ def work_edit():
         render_template('service.html', title=_('Work is not defined'))
 
     form = WorkForm(formdata=request.form, obj=work)
+    service = Service.query.get(work.service_id)
     form.username.choices = [(u.username, u.username)
                              for u in User.query.all()]
-    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
+    form.service.choices = [(service.name, service.name)]
 
     if request.method == 'POST' and form.validate_on_submit():
         string_from='%s\t%s\t%s\t@%s\n' % (work.start,work.stop,work.service,work.username)
-        form.populate_obj(work)
+        service = Service.query.filter_by(name=form.service.data).first()
+        work.start=form.start.data
+        work.stop=form.stop.data
+        work.username=form.username.data
+        work.color=service.color
+        work.status=form.status.data
+        work.service=service
+
+work.service = service
         db.session.commit()
         flash(_('Your changes have been saved.'))
 
