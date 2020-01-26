@@ -216,10 +216,14 @@ def index():
                                             ).all()
 
                 else:
-                    work = Work.query.filter(func.datetime(Work.start) > date_min,
-                                func.datetime(Work.stop) < date_max
-                                ).order_by(Work.service_id)
-
+                    services = Service.query.all()
+                    work=[]
+                    for s in services:
+                        w = Work.query.filter( (Work.service_id == s.id) &
+                                                (func.datetime(Work.start) > date_min) &
+                                                (func.datetime(Work.stop) < date_max)
+                                                ).order_by(Work.start)
+                        work += w
                     oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                                   (func.datetime(Oncall.start) < date_max )
                                                 ).order_by(Oncall.service)
