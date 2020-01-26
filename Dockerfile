@@ -1,6 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM centos:latest
 
+WORKDIR /teamplan
+
 # Set the working directory to /app
 RUN mkdir /teamplan
 RUN mkdir /teamplan/logs
