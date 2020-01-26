@@ -149,7 +149,7 @@
                 {% endset %}
 
 
-                <a href="{{ url_for('main.work_edit', work=w.name) }}" class="list-group-item" style="background: {{w.color}}">
+                <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item" style="background: {{w.color}}">
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
                                         username=w.username, service=w.service.name) }}</h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
