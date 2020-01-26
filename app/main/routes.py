@@ -545,7 +545,6 @@ def work_edit():
         work.status=form.status.data
         work.service=service
 
-work.service = service
         db.session.commit()
         flash(_('Your changes have been saved.'))
 
