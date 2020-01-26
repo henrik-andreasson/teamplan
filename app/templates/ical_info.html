@@ -7,6 +7,9 @@
     <table class="table table-hover">
       <tr>
         <td>{{_('Ical URLs are private, please dont share')}}</td>
+        <td>          <a href="{{ url_for('api.ical_reset_api_key')}}">
+                      {{_('Set/reset user ical api key')}}</a>
+        </td>
       </tr>
       <tr>
         <td>{{ _('user ical url')}}</td>
@@ -20,7 +23,7 @@
       <tr>
         <td>{{ _('service ical url')}}</td>
 
-        <td>          <a href="{{ url_for('api.ical', api_user=user.username, serice=s.name, api_key=user.api_key)}}">
+        <td>          <a href="{{ url_for('api.ical', api_user=user.username, service=s.name, api_key=user.api_key)}}">
                       {{_('service %(service)s ical url', service=s.name)}}</a>
         </td>
       </tr>
