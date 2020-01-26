@@ -169,12 +169,12 @@ def index():
                                               (Work.username == username) &
                                               (func.datetime(Work.start) > date_min) &
                                               (func.datetime(Work.stop) < date_max)
-                                            ).order_by(Work.service_id)
+                                            ).order_by(Work.start)
 
                     oncall = Oncall.query.filter( (Oncall.service == service) &
                                                   (func.datetime(Oncall.start) > date_min) &
                                                   (func.datetime(Oncall.stop) < date_max)
-                                        ).order_by(Oncall.service)
+                                        ).order_by(Oncall.start)
 
                     absence = Absence.query.filter(username == username,
                                             func.datetime(Absence.start) > date_min,
@@ -185,12 +185,12 @@ def index():
                     work = Work.query.filter( (Work.service_id == service_obj.id) &
                                               (func.datetime(Work.start) > date_min) &
                                               (func.datetime(Work.stop) < date_max)
-                                             ).order_by(Work.service_id)
+                                             ).order_by(Work.start)
 
                     oncall = Oncall.query.filter( (Oncall.service == service) &
                                                   (func.datetime(Oncall.start) > date_min) &
                                                   (func.datetime(Oncall.stop) < date_max)
-                                        ).order_by(Oncall.service)
+                                        ).order_by(Oncall.start)
 
                     for u in service_obj.users:
                         absence += Absence.query.filter(username == u.username,
@@ -203,7 +203,7 @@ def index():
                     work = Work.query.filter(Work.username == username,
                                             func.datetime(Work.start) > date_min,
                                             func.datetime(Work.stop) < date_max
-                                            ).order_by(Work.service_id)
+                                            ).order_by(Work.start)
 
                     oncall = Oncall.query.filter( (Oncall.username == username) &
                                                   (func.datetime(Oncall.start) > date_min ) &
@@ -218,11 +218,11 @@ def index():
                 else:
                     work = Work.query.filter(func.datetime(Work.start) > date_min,
                                 func.datetime(Work.stop) < date_max
-                                ).order_by(Work.service_id)
+                                ).order_by(Work.start)
 
                     oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                                   (func.datetime(Oncall.start) < date_max )
-                                                ).order_by(Oncall.service)
+                                                ).order_by(Oncall.start)
 
                     absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
                                             func.datetime(Absence.stop) < date_max
