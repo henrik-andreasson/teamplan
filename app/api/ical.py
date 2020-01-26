@@ -94,9 +94,9 @@ def ical():
         user = User.query.filter_by(username = w.username).first()
         event = Event()
         event.add('summary', "%s@%s" % (w.username, w.service.name))
-        event.add('dtstart', w.start)
-        event.add('dtend', w.stop)
-        event.add('dtstamp', w.stop)
+        event.add('dtstart', w.start.strftime("%Y%m%dT%H:%M%SZ"))
+        event.add('dtend', w.stop.strftime("%Y%m%dT%H:%M%SZ"))
+        event.add('dtstamp', w.stop.strftime("%Y%m%dT%H:%M%SZ"))
         event.add('uid', str(uuid.uuid4()) + "@domain.com")
 
         organizer = vCalAddress('MAILTO:schema@cgi.com')

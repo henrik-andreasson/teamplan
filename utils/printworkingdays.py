@@ -3,7 +3,7 @@
 import calendar
 # change these values to your needs ...
 year = 2020
-month = 1     # jan=1
+month = 2     # jan=1
 # makes Monday first day of week (this is the default)
 calendar.setfirstweekday(calendar.MONDAY)
 months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
