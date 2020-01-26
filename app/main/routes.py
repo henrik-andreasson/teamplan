@@ -218,11 +218,11 @@ def index():
                 else:
                     work = Work.query.filter(func.datetime(Work.start) > date_min,
                                 func.datetime(Work.stop) < date_max
-                                ).order_by(Work.start)
+                                ).order_by(Work.service_id)
 
                     oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                                   (func.datetime(Oncall.start) < date_max )
-                                                ).order_by(Oncall.start)
+                                                ).order_by(Oncall.service)
 
                     absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
                                             func.datetime(Absence.stop) < date_max
