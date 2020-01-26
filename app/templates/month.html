@@ -133,12 +133,15 @@
 <!--  work  -->
 
           {% for day in week %}
+
             <td>
+
               <div class="list-group dropdown">
+                {% if day['display_day']  %}
                   <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item">
                     {{ day['display_day'] }}
                   </a>
-
+                {% endif %}
                   {% for w in day['work'] %}
 
                 {% set hr_start %}
