@@ -4,9 +4,6 @@ FROM centos:latest
 WORKDIR /teamplan
 
 # Set the working directory to /app
-RUN mkdir /teamplan
-RUN mkdir /teamplan/logs
-RUN mkdir /teamplan/app
 COPY . /teamplan/
 #COPY teamplan.py /teamplan/
 #COPY config.py /teamplan
