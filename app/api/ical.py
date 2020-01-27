@@ -9,6 +9,7 @@ from app.api.auth import basic_auth
 from icalendar import  vCalAddress, vText, Event, Alarm
 from icalendar import Calendar as icale
 import pytz
+from pytz import timezone
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
@@ -64,10 +65,10 @@ def ical():
                                     ).order_by(Oncall.service)
 
     elif username is not None:
-        work = Work.query.filter(Work.username == username,
-                                func.datetime(Work.start) > date_min,
-                                func.datetime(Work.start) < date_max
-                                ).order_by(Work.service_id)
+        work = Work.query.filter( ( Work.username == username ) &
+                                     ( func.datetime(Work.start) > date_min ) &
+                                     ( func.datetime(Work.start) < date_max )
+                                   ).order_by(Work.service_id)
 
         oncall = Oncall.query.filter( (Oncall.username == username) &
                                       (func.datetime(Oncall.start) > date_min ) &
@@ -84,22 +85,24 @@ def ical():
                                 ).order_by(Oncall.service)
 
 
-    reminderHours = 1
+    reminderHours = current_app.config['ICAL_REMINDER_MINS']
     cal = icale()
 
 #    cal.add('prodid', '-//My calendar product//schma.cs//')
 #    cal.add('version', '2.0')
 
+    local_tz = timezone(current_app.config['TEAMPLAN_TZ'])
+    utc = pytz.utc
+
     for w in work:
         user = User.query.filter_by(username = w.username).first()
         event = Event()
         event.add('summary', "%s@%s" % (w.username, w.service.name))
-        event.add('dtstart', w.start.strftime("%Y%m%dT%H:%M%SZ"))
-        event.add('dtend', w.stop.strftime("%Y%m%dT%H:%M%SZ"))
-        event.add('dtstamp', w.stop.strftime("%Y%m%dT%H:%M%SZ"))
-        event.add('uid', str(uuid.uuid4()) + "@domain.com")
 
-        organizer = vCalAddress('MAILTO:schema@cgi.com')
+        event.add('dtstart', local_tz.localize(w.start).astimezone(utc))
+        event.add('dtend', local_tz.localize(w.stop).astimezone(utc))
+        event.add('uid', str(uuid.uuid4()) + current_app.config['ICAL_UID_DOMAIN'])
+        organizer = vCalAddress('MAILTO:' + current_app.config['ICAL_INVITE_FROM'])
         organizer.params['cn'] = vText('Schema system')
         event['organizer'] = organizer
 
@@ -120,10 +123,11 @@ def ical():
         event = Event()
         user = User.query.filter(User.username == oc.username).first()
 
-        event.add('summary', "%s@%s" % (oc.username, oc.service))
-        event.add('dtstart', oc.start)
-        event.add('dtend', oc.stop)
-        event.add('dtstamp', oc.stop)
+        event.add('summary', "oncall: %s@%s" % (oc.username, oc.service))
+        event.add('dtstart', local_tz.localize(oc.start).astimezone(utc))
+        event.add('dtend', local_tz.localize(oc.stop).astimezone(utc))
+        event.add('uid', str(uuid.uuid4()) + "@domain.com")
+
 
         organizer = vCalAddress('MAILTO:schema@cgi.com')
         organizer.params['cn'] = vText('Schema system')

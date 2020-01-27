@@ -26,3 +26,7 @@ class Config(object):
     NON_WORKING_DAYS_COLOR=os.environ.get('NON_WORKING_DAYS_COLOR') or "#FF2222"
     ABSENCE_COLOR=os.environ.get('ABSENCE_COLOR') or "#AAAAAA"
     OPEN_REGISTRATION=os.environ.get('OPEN_REGISTRATION') or False
+    TEAMPLAN_TZ=os.environ.get('TEAMPLAN_TZ') or "Europe/Stockholm"
+    ICAL_REMINDER_MINS=os.environ.get('ICAL_REMINDER_MINS') or "60"
+    ICAL_INVITE_FROM=os.environ.get('ICAL_INVITE_FROM') or "schema@localhost"
+    ICAL_UID_DOMAIN=os.environ.get('ICAL_UID_DOMAIN') or "localhost"
