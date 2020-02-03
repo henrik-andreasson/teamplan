@@ -119,9 +119,21 @@
                       {{ oc.stop.strftime("(%Y-%m-%d)") }}
                 {% endset %}
 
+                {% if oc.status == "wants-out" %}
+                  {% set help_wanted %} ! {% endset %}
+                {% endif %}
+
+                {% if oc.status == "needs-out" %}
+                  {% set help_wanted %} !! {% endset %}
+                {% endif %}
+
+                {% if oc.status == "unassigned" %}
+                    {% set help_wanted %} ? {% endset %}
+                {% endif %}
+
                   <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" style="background: {{oc.color}}" class="list-group-item">
                     <div class="text-nowrap"><h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.username, service=oc.service) }}</h4></div>
-                    <div class="text-nowrap"><p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }}</p></div>
+                    <div class="text-nowrap"><p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }} {{ help_wanted }}</p></div>
                   </a>
 
                 {% endfor %}
@@ -151,12 +163,22 @@
                       {{ w.stop.strftime("(%H:%M)") }}
                 {% endset %}
 
+                {% if w.status == "wants-out" %}
+                  {% set help_wanted %} ! {% endset %}
+                {% endif %}
+                {% if w.status == "needs-out" %}
+                  {% set help_wanted %} !! {% endset %}
+                {% endif %}
+                {% if w.status == "unassigned" %}
+                    {% set help_wanted %} ? {% endset %}
+                {% endif %}
+
 
                 <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item" style="background: {{w.color}}">
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
                                         username=w.username, service=w.service.name) }}</h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
-                                        hr_start=hr_start, hr_stop=hr_stop) }}</p></div>
+                                        hr_start=hr_start, hr_stop=hr_stop) }} {{help_wanted}}</p></div>
                 </a>
 
 
@@ -195,10 +217,17 @@
                     {{ ab.stop.strftime("(%H:%M)") }}
                   {% endset %}
 
+                  {% if ab.status == "requested" %}
+                      {% set help_wanted %} ? {% endset %}
+                  {% endif %}
+
+                  {% if ab.status == "denied" %}
+                      {% set help_wanted %} - {% endset %}
+                  {% endif %}
 
                   <a href="{{ url_for('main.absence_edit', absence=ab.id) }}" class="list-group-item" style="background: {{absence_color}}">
                     <div class="text-nowrap"><h4 class="text-nowrap" id="text-nowrap">{{ _('%(name)s@off', name=ab.username) }}</h4></div>
-                    <div class="text-nowrap"><p class="list-group-item-text  id="text-nowrap"">{{ _('%(start)s - %(stop)s', start=ab_start, stop=ab_stop) }}</p></div>
+                    <div class="text-nowrap"><p class="list-group-item-text  id="text-nowrap"">{{ _('%(start)s - %(stop)s', start=ab_start, stop=ab_stop) }} {{help_wanted}}</p></div>
                   </a>
 
               {% endfor %}
