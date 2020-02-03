@@ -64,6 +64,11 @@ def ical():
                                       (func.datetime(Oncall.start) < date_max)
                                     ).order_by(Oncall.service)
 
+        absence = Absence.query.filter(     func.datetime(Absence.start) > date_min,
+                                            func.datetime(Absence.stop) < date_max
+                                            ).all()
+
+
     elif username is not None:
         work = Work.query.filter( ( Work.username == username ) &
                                      ( func.datetime(Work.start) > date_min ) &
@@ -75,6 +80,11 @@ def ical():
                                       (func.datetime(Oncall.start) < date_max )
                                     ).order_by(Oncall.service)
 
+        absence = Absence.query.filter( (Absence.username == username) &
+                                        (func.datetime(Absence.start) > date_min) &
+                                        ( func.datetime(Absence.stop) < date_max)
+                                      ).all()
+
     else:
         work = Work.query.filter(func.datetime(Work.start) > date_min,
                         func.datetime(Work.start) < date_max
@@ -83,6 +93,10 @@ def ical():
         oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
                                   (func.datetime(Oncall.start) < date_max )
                                 ).order_by(Oncall.service)
+
+        absence = Absence.query.filter(     func.datetime(Absence.start) > date_min,
+                                            func.datetime(Absence.stop) < date_max
+                                            ).all()
 
 
     reminderHours = current_app.config['ICAL_REMINDER_MINS']
@@ -126,15 +140,41 @@ def ical():
         event.add('summary', "oncall: %s@%s" % (oc.username, oc.service))
         event.add('dtstart', local_tz.localize(oc.start).astimezone(utc))
         event.add('dtend', local_tz.localize(oc.stop).astimezone(utc))
-        event.add('uid', str(uuid.uuid4()) + "@domain.com")
 
+        event.add('uid', str(uuid.uuid4()) + current_app.config['ICAL_UID_DOMAIN'])
+        organizer = vCalAddress('MAILTO:' + current_app.config['ICAL_INVITE_FROM'])
 
-        organizer = vCalAddress('MAILTO:schema@cgi.com')
         organizer.params['cn'] = vText('Schema system')
         event['organizer'] = organizer
 
         attendee = vCalAddress('MAILTO:%s' % user.email)
         attendee.params['cn'] = vText(oc.username)
+        attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
+        event.add('attendee', attendee, encode=0)
+
+        alarm = Alarm()
+        alarm.add("action", "DISPLAY")
+        alarm.add('description', "Reminder")
+        alarm.add("TRIGGER;RELATED=START", "-PT{0}H".format(reminderHours))
+        event.add_component(alarm)
+        cal.add_component(event)
+
+
+
+    for ab in absence:
+        event = Event()
+        user = User.query.filter(User.username == ab.username).first()
+
+        event.add('summary', "absence: %s" % (ab.username))
+        event.add('dtstart', local_tz.localize(ab.start).astimezone(utc))
+        event.add('dtend', local_tz.localize(ab.stop).astimezone(utc))
+        event.add('uid', str(uuid.uuid4()) + current_app.config['ICAL_UID_DOMAIN'])
+        organizer = vCalAddress('MAILTO:' + current_app.config['ICAL_INVITE_FROM'])
+        organizer.params['cn'] = vText('Schema system')
+        event['organizer'] = organizer
+
+        attendee = vCalAddress('MAILTO:%s' % user.email)
+        attendee.params['cn'] = vText(ab.username)
         attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
         event.add('attendee', attendee, encode=0)
 
