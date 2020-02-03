@@ -305,20 +305,6 @@ def explore():
                            prev_url=prev_url)
 
 
-@bp.route('/test')
-@login_required
-def test():
-
-    work = Work.query.all()
-
-    for w in work:
-        print("%s" % w.service.id)
-
-    return render_template('test.html', title=_('Test'),
-                           allwork=work)
-
-
-
 @bp.route('/user/<username>')
 @login_required
 def user(username):
@@ -337,6 +323,8 @@ def user(username):
 @bp.route('/service/add', methods=['GET', 'POST'])
 @login_required
 def service_add():
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     form = ServiceForm()
     form.users.choices = [(u.username, u.username)
@@ -365,6 +353,8 @@ def service_add():
 @bp.route('/service/edit', methods=['GET', 'POST'])
 @login_required
 def service_edit():
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     servicename = request.args.get('name')
     service = Service.query.filter_by(name=servicename).first()
@@ -451,6 +441,8 @@ def ical_reset_api_key():
 @login_required
 def work_add():
     form = WorkForm()
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     if 'selected_user' in session:
 #        print("session has user selected: %s" % session['selected_user'])
@@ -478,6 +470,7 @@ def work_add():
 
 
     page = request.args.get('page', 1, type=int)
+
 
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -517,8 +510,7 @@ def work_add():
             form.stop.data =  datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
 
         # TODO figure out how to show work added by the current user this session
-        allwork = Work.query.order_by(Work.start).limit(10)
-
+        allwork = Work.query.order_by(Work.id.desc()).limit(10)
         return render_template('work.html', title=_('Add Work'),
                                form=form, allwork=allwork)
 
@@ -526,6 +518,9 @@ def work_add():
 @bp.route('/work/edit/', methods=['GET', 'POST'])
 @login_required
 def work_edit():
+
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     workid = request.args.get('work')
     work = Work.query.get(workid)
@@ -588,9 +583,9 @@ def work_list():
         work = Work.query.order_by(Work.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=work.next_num) \
+    next_url = url_for('main.work_list', page=work.next_num) \
         if work.has_next else None
-    prev_url = url_for('main.index', page=work.prev_num) \
+    prev_url = url_for('main.work_list', page=work.prev_num) \
         if work.has_prev else None
 
 
@@ -602,6 +597,10 @@ def work_list():
 @bp.route('/absence/add', methods=['GET', 'POST'])
 @login_required
 def absence_add():
+
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
+
     form = AbsenceForm()
     page = request.args.get('page', 1, type=int)
 
@@ -645,6 +644,8 @@ def absence_add():
 @bp.route('/absence/edit/', methods=['GET', 'POST'])
 @login_required
 def absence_edit():
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     absenceid = request.args.get('absence')
     absence = Absence.query.get(absenceid)
@@ -712,6 +713,8 @@ def absence_list():
 @login_required
 def oncall_add():
     form = OncallForm()
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     form.username.choices = [(u.username, u.username)
                              for u in User.query.all()]
@@ -760,6 +763,8 @@ def oncall_add():
 @bp.route('/oncall/edit/', methods=['GET', 'POST'])
 @login_required
 def oncall_edit():
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     oncallid = request.args.get('oncall')
     oncall = Oncall.query.get(oncallid)
@@ -828,6 +833,8 @@ def oncall_list():
 @bp.route('/nonworkingdays/add', methods=['GET', 'POST'])
 @login_required
 def nonworkingdays_add():
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
     form = NonWorkingDaysForm()
     page = request.args.get('page', 1, type=int)
 
@@ -863,6 +870,9 @@ def nonworkingdays_add():
 @bp.route('/nonworkingdays/edit/', methods=['GET', 'POST'])
 @login_required
 def nonworkingdays_edit():
+
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
 
     nonworkingdaysid = request.args.get('nwd')
     nwd = NonWorkingDays.query.get(nonworkingdaysid)
@@ -915,31 +925,3 @@ def nonworkingdays_list():
     return render_template('nonworkingdays.html', title=_('nonworkingdays'),
                            allnwd=nonworkingdays.items, next_url=next_url,
                            prev_url=prev_url)
-
-
-@bp.route('/chart', methods=['GET', 'POST'])
-@login_required
-def chart():
-
-
-    labels = [
-        'JAN', 'FEB', 'MAR', 'APR',
-        'MAY', 'JUN', 'JUL', 'AUG',
-        'SEP', 'OCT', 'NOV', 'DEC'
-        ]
-
-    values = [
-        967.67, 1190.89, 1079.75, 1349.19,
-        2328.91, 2504.28, 2873.83, 4764.87,
-        4349.29, 6458.30, 9907, 16297
-        ]
-
-
-
-    labels = []
-    for u in User.query.all():
-        labels.append(u.username)
-
-    bar_labels=labels
-    bar_values=values
-    return render_template('bar_chart.html', title='Bitcoin Monthly Price in USD', max=17000, labels=bar_labels, values=bar_values)

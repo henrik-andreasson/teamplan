@@ -28,7 +28,7 @@ class ServiceForm(FlaskForm):
     color = StringField(_l('color'), validators=[DataRequired()])
     users = SelectMultipleField(_l('Users'), validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
-
+    cancel = SubmitField(_l('Cancel'))
 
 class WorkForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -43,6 +43,7 @@ class WorkForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
 
 class AbsenceForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -55,6 +56,7 @@ class AbsenceForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
 
 class OncallForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -69,6 +71,7 @@ class OncallForm(FlaskForm):
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
 
 class NonWorkingDaysForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()],
@@ -78,3 +81,4 @@ class NonWorkingDaysForm(FlaskForm):
     stop = DateTimeField(_l('Stop Non Working Day'), validators=[DataRequired()],
                         format='%Y-%m-%d %H:%M', default=datetime.now())
     submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
