@@ -519,10 +519,13 @@ def work_add():
 @login_required
 def work_edit():
 
+    workid = request.args.get('work')
+
     if 'cancel' in request.form:
         return redirect(request.referrer)
+    if 'delete' in request.form:
+        return redirect(url_for('main.work_delete', work=workid))
 
-    workid = request.args.get('work')
     work = Work.query.get(workid)
 
     if work is None:
@@ -594,6 +597,33 @@ def work_list():
                            prev_url=prev_url)
 
 
+@bp.route('/work/delete/', methods=['GET', 'POST'])
+@login_required
+def work_delete():
+
+    workid = request.args.get('work')
+    work = Work.query.get(workid)
+
+    if work is None:
+        flash(_('Work was not deleted, id not found!'))
+        return redirect(url_for('main.index'))
+
+    deleted_msg='Work deleted: %s\t%s\t%s\t@%s\n' % (work.start,work.stop,work.service.name,work.username)
+    if current_app.config['ROCKET_ENABLED']:
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('work deleted: \n%s\nto:\n%s\nby: %s' % (
+                             deleted_msg,current_user.username),
+                             channel=current_app.config['ROCKET_CHANNEL']
+                             ).json()
+    flash(deleted_msg)
+    db.session.delete(work)
+    db.session.commit()
+
+    return redirect(url_for('main.index'))
+
+
 @bp.route('/absence/add', methods=['GET', 'POST'])
 @login_required
 def absence_add():
@@ -644,11 +674,15 @@ def absence_add():
 @bp.route('/absence/edit/', methods=['GET', 'POST'])
 @login_required
 def absence_edit():
-    if 'cancel' in request.form:
-        return redirect(request.referrer)
 
     absenceid = request.args.get('absence')
     absence = Absence.query.get(absenceid)
+
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
+
+    if 'delete' in request.form:
+        return redirect(url_for('main.absence_delete', absence=absenceid))
 
     if absence is None:
         render_template('service.html', title=_('absence is not defined'))
@@ -707,6 +741,34 @@ def absence_list():
     return render_template('absence.html', title=_('absence'),
                            allabsence=absence.items, next_url=next_url,
                            prev_url=prev_url)
+
+
+@bp.route('/absence/delete/', methods=['GET', 'POST'])
+@login_required
+def absence_delete():
+
+    absenceid = request.args.get('absence')
+    absence = Absence.query.get(absenceid)
+
+    if absence is None:
+        flash(_('Absence was not deleted, id not found!'))
+        return redirect(url_for('main.index'))
+
+    deleted_msg='Absence deleted: %s\t%s\t%s\n' % (absence.start,absence.stop,absence.username)
+    if current_app.config['ROCKET_ENABLED']:
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('absence deleted: \n%s\nto:\n%s\nby: %s' % (
+                             deleted_msg,current_user.username),
+                             channel=current_app.config['ROCKET_CHANNEL']
+                             ).json()
+    flash(deleted_msg)
+    db.session.delete(absence)
+    db.session.commit()
+
+    return redirect(url_for('main.index'))
+
 
 
 @bp.route('/oncall/add', methods=['GET', 'POST'])
@@ -770,7 +832,10 @@ def oncall_edit():
     oncall = Oncall.query.get(oncallid)
 
     if oncall is None:
-        render_template('service.html', title=_('oncall is not defined'))
+        render_template('main.index', title=_('oncall is not defined'))
+
+    if 'delete' in request.form:
+        return redirect(url_for('main.oncall_delete', oncall=oncallid))
 
     form = OncallForm(formdata=request.form, obj=oncall)
     form.username.choices = [(u.username, u.username)
@@ -828,6 +893,33 @@ def oncall_list():
                            alloncall=oncall.items, next_url=next_url,
                            prev_url=prev_url)
 
+@bp.route('/oncall/delete/', methods=['GET', 'POST'])
+@login_required
+def oncall_delete():
+
+    oncallid = request.args.get('oncall')
+    oncall = Oncall.query.get(oncallid)
+
+    if oncall is None:
+        flash(_('oncall was not deleted, id not found!'))
+        return redirect(url_for('main.index'))
+
+    deleted_msg='oncall deleted: %s\t%s\t%s @%s\n' % (oncall.start,
+                                oncall.stop,oncall.service, oncall.username)
+    if current_app.config['ROCKET_ENABLED']:
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('oncall deleted: \n%s\nto:\n%s\nby: %s' % (
+                             deleted_msg,current_user.username),
+                             channel=current_app.config['ROCKET_CHANNEL']
+                             ).json()
+    flash(deleted_msg)
+    db.session.delete(oncall)
+    db.session.commit()
+
+    return redirect(url_for('main.index'))
+
 
 
 @bp.route('/nonworkingdays/add', methods=['GET', 'POST'])
@@ -880,6 +972,10 @@ def nonworkingdays_edit():
     if nwd is None:
         render_template('nonworkingdays.html', title=_('nonworkingdays is not defined'))
 
+    if 'delete' in request.form:
+        return redirect(url_for('main.nonworkingday_delete', nwd=nonworkingdaysid))
+
+
     form = NonWorkingDaysForm(formdata=request.form, obj=nwd)
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -925,3 +1021,29 @@ def nonworkingdays_list():
     return render_template('nonworkingdays.html', title=_('nonworkingdays'),
                            allnwd=nonworkingdays.items, next_url=next_url,
                            prev_url=prev_url)
+
+@bp.route('/nonworkingday/delete/', methods=['GET', 'POST'])
+@login_required
+def nonworkingday_delete():
+
+    nonworkingdayid = request.args.get('nwd')
+    nonworkingday = NonWorkingDays.query.get(nonworkingdayid)
+
+    if nonworkingday is None:
+        flash(_('nonworkingday was not deleted, id not found!'))
+        return redirect(url_for('main.index'))
+
+    deleted_msg='nonworkingday deleted: %s\t%s\t%s\n' % (nonworkingday.start,nonworkingday.stop,nonworkingday.name)
+    if current_app.config['ROCKET_ENABLED']:
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        rocket.chat_post_message('nonworkingday deleted: \n%s\nto:\n%s\nby: %s' % (
+                             deleted_msg,current_user.username),
+                             channel=current_app.config['ROCKET_CHANNEL']
+                             ).json()
+    flash(deleted_msg)
+    db.session.delete(nonworkingday)
+    db.session.commit()
+
+    return redirect(url_for('main.index'))

@@ -11,6 +11,7 @@ class EditProfileForm(FlaskForm):
     about_me = TextAreaField(_l('About me'),
                              validators=[Length(min=0, max=140)])
     submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
 
     def __init__(self, original_username, *args, **kwargs):
         super(EditProfileForm, self).__init__(*args, **kwargs)
@@ -29,6 +30,7 @@ class ServiceForm(FlaskForm):
     users = SelectMultipleField(_l('Users'), validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
+    delete = SubmitField(_l('Delete'))
 
 class WorkForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -44,6 +46,7 @@ class WorkForm(FlaskForm):
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
+    delete = SubmitField(_l('Delete'))
 
 class AbsenceForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -57,6 +60,7 @@ class AbsenceForm(FlaskForm):
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
+    delete = SubmitField(_l('Delete'))
 
 class OncallForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -72,6 +76,7 @@ class OncallForm(FlaskForm):
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
+    delete = SubmitField(_l('Delete'))
 
 class NonWorkingDaysForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()],
@@ -82,3 +87,4 @@ class NonWorkingDaysForm(FlaskForm):
                         format='%Y-%m-%d %H:%M', default=datetime.now())
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
+    delete = SubmitField(_l('Delete'))
