@@ -48,6 +48,16 @@ class WorkForm(FlaskForm):
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
 
+
+class GenrateMonthWorkForm(FlaskForm):
+    service = SelectField(_l('service'), validators=[DataRequired()])
+    month = DateTimeField(_l('motnh'), validators=[DataRequired()],
+                          format='%Y-%m', default=datetime.now())
+    status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
+                                                ('unassigned', 'Unassigned')])
+    submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
+
 class AbsenceForm(FlaskForm):
     username = SelectField(_l('Username'))
     status = SelectField(_l('Status'), choices=[('requested', 'Requested'),

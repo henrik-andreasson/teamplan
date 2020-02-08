@@ -5,7 +5,7 @@ from flask_babel import _, get_locale
 # from guess_language import guess_language
 from app import db
 from app.main.forms import EditProfileForm, WorkForm, ServiceForm, \
-    AbsenceForm, OncallForm, NonWorkingDaysForm
+    AbsenceForm, OncallForm, NonWorkingDaysForm, GenrateMonthWorkForm
 from app.models import User, Work, Service, Absence, Oncall, NonWorkingDays
 from app.main import bp
 from calendar import Calendar
@@ -13,6 +13,8 @@ from datetime import datetime, date, timedelta
 from sqlalchemy import func, or_, and_
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
+import calendar
+import random
 
 @bp.before_app_request
 def before_request():
@@ -457,7 +459,7 @@ def work_add():
 
 
     elif 'selected_service' in session:
-#        print("session has service selected: %s" % session['selected_service'])
+ #        print("session has service selected: %s" % session['selected_service'])
         service = Service.query.filter_by(name=session['selected_service']).first()
         form.service.choices = [(service.name, service.name)]
         form.username.choices = [(u.username, u.username)
@@ -513,6 +515,77 @@ def work_add():
         allwork = Work.query.order_by(Work.id.desc()).limit(10)
         return render_template('work.html', title=_('Add Work'),
                                form=form, allwork=allwork)
+
+
+
+@bp.route('/work/add/month', methods=['GET', 'POST'])
+@login_required
+def work_add_month():
+    form = GenrateMonthWorkForm()
+    month = request.args.get('month')
+    if 'cancel' in request.form:
+        return redirect(request.referrer)
+
+    if month is not None:
+        selected_month = datetime.strptime(month, "%Y-%m")
+        session['selected_month'] = month
+    elif 'selected_month' in session:
+        month = session['selected_month']
+        selected_month = datetime.strptime(month, "%Y-%m")
+    else:
+        selected_month = datetime.utcnow()
+
+    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
+
+    if request.method == 'POST' and form.validate_on_submit():
+        service = Service.query.filter_by(name=form.service.data).first()
+        selected_month=form.month.data
+        status=form.status.data
+
+        c = calendar.Calendar()
+        for i in c.itermonthdays(selected_month.year, selected_month.month):
+
+            try:
+                weekday = calendar.weekday(selected_month.year, selected_month.month, i)
+            except ValueError:
+                continue
+            if weekday < calendar.SATURDAY:
+
+                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"08", "00")
+                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"12", "30")
+                work = Work(start=datetime.strptime(start, "%Y-%m-%d %H:%M"),
+                        stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
+                        color=service.color,
+                        status=status)
+                if status == "assigned":
+                    user=random.choice(service.users)
+                    work.username=user.username
+
+                work.service = service
+                db.session.add(work)
+                db.session.commit()
+
+                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"12", "30")
+                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"17", "00")
+                work = Work(start=datetime.strptime(start, "%Y-%m-%d %H:%M"),
+                        stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
+                        color=service.color,
+                        status=status)
+                if status == "assigned":
+                    user=random.choice(service.users)
+                    work.username=user.username
+
+                work.service = service
+                db.session.add(work)
+                db.session.commit()
+
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('main.index'))
+
+    else:
+
+        return render_template('generate_month_work.html', title=_('Add Work for a month'),
+                               form=form)
 
 
 @bp.route('/work/edit/', methods=['GET', 'POST'])

@@ -26,6 +26,7 @@
                     <li class="nav-item"><a href="{{ url_for('main.absence_add') }}">{{ _('Absence') }}</a></li>
                     <li class="nav-item"><a href="{{ url_for('main.nonworkingdays_add') }}">{{ _('Non Working Days') }}</a></li>
                     <li class="nav-item"><a href="{{ url_for('main.ical_info') }}">{{ _('ICal Info') }}</a></li>
+                    <li class="nav-item"><a href="{{ url_for('main.work_add_month') }}">{{ _('Generate Month') }}</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
