@@ -9,8 +9,8 @@ from flask import url_for
 import base64
 from datetime import datetime, timedelta
 import os
-from sqlalchemy.orm import backref, relationship
-from sqlalchemy import Table, Column, Integer, ForeignKey
+# from sqlalchemy.orm import backref, relationship
+# from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
 
@@ -18,9 +18,10 @@ import uuid
 Base = declarative_base()
 
 service_user = db.Table('service_user',
-    db.Column('service_id', db.Integer, db.ForeignKey('service.id')),
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
-)
+                        db.Column('service_id', db.Integer, db.ForeignKey('service.id')),
+                        db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+                        )
+
 
 class PaginatedAPIMixin(object):
     @staticmethod
@@ -56,6 +57,7 @@ class Service(PaginatedAPIMixin, db.Model):
     users = db.relationship('User', secondary=service_user)
 #    manager = db.relationship('Manager', secondary=service_user)
     work = db.relationship("Work")
+
     def __repr__(self):
         return '<Service {}>'.format(self.name)
 
@@ -170,9 +172,8 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
         db.session.commit()
         return self.api_key
 
-
     @staticmethod
-    def check_api_key(user,api_key):
+    def check_api_key(user, api_key):
         if user is None or user.api_key is None:
             return False
         elif user.api_key == api_key:

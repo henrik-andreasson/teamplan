@@ -8,6 +8,7 @@ from flask import request
 from app.api.auth import token_auth
 from flask import g, abort
 
+
 @bp.route('/users', methods=['POST'])
 @token_auth.login_required
 def create_user():
@@ -39,6 +40,7 @@ def get_users():
     per_page = min(request.args.get('per_page', 10, type=int), 100)
     data = User.to_collection_dict(User.query, page, per_page, 'api.get_users')
     return jsonify(data)
+
 
 @bp.route('/users/<int:id>', methods=['PUT'])
 @token_auth.login_required

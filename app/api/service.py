@@ -52,8 +52,7 @@ def update_service(id):
     data = request.get_json() or {}
     service.from_dict(data, new_service=False)
     db.session.commit()
-    return jsonify(work.to_dict())
-
+    return jsonify(service.to_dict())
 
 
 @bp.route('/service/adduser', methods=['POST'])

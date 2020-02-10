@@ -6,7 +6,7 @@ from app import db
 from app.api.errors import bad_request
 from flask import request
 from app.api.auth import basic_auth
-from icalendar import  vCalAddress, vText, Event, Alarm
+from icalendar import vCalAddress, vText, Event, Alarm
 from icalendar import Calendar as icale
 import pytz
 from pytz import timezone
@@ -16,6 +16,7 @@ from dateutil import relativedelta
 from flask_login import login_manager
 from app.api.errors import error_response
 import uuid
+
 
 @bp.route('/ical/')
 def ical():
@@ -34,7 +35,7 @@ def ical():
     if api_key is None:
         return error_response(401)
 
-    if User.check_api_key(user,api_key) is False:
+    if User.check_api_key(user, api_key) is False:
         return error_response(401)
 
     # all ok
@@ -50,54 +51,53 @@ def ical():
     date_min = prev_month.strftime("%Y-%m-%d 00:00:00")
     date_max = next_month.strftime("%Y-%m-%d 23:59:00")
 
-    print("search range: %s->%s" %(date_min,date_max))
+    print("search range: %s->%s" % (date_min, date_max))
 
     if service is not None:
         s = Service.query.filter_by(name=service).first()
         work = Work.query.filter(Work.service_id == s.name,
-                                func.datetime(Work.start) > date_min,
-                                func.datetime(Work.start) < date_max
-                                ).order_by(Work.service_id)
+                                 func.datetime(Work.start) > date_min,
+                                 func.datetime(Work.start) < date_max
+                                 ).order_by(Work.service_id)
 
-        oncall = Oncall.query.filter( (Oncall.service == service) &
-                                      (func.datetime(Oncall.start) > date_min) &
-                                      (func.datetime(Oncall.start) < date_max)
-                                    ).order_by(Oncall.service)
+        oncall = Oncall.query.filter(
+         (Oncall.service == service)
+         & (func.datetime(Oncall.start) > date_min)
+         & (func.datetime(Oncall.start) < date_max)
+         ).order_by(Oncall.service)
 
-        absence = Absence.query.filter(     func.datetime(Absence.start) > date_min,
-                                            func.datetime(Absence.stop) < date_max
-                                            ).all()
-
+        absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
+                                       func.datetime(Absence.stop) < date_max
+                                       ).all()
 
     elif username is not None:
-        work = Work.query.filter( ( Work.username == username ) &
-                                     ( func.datetime(Work.start) > date_min ) &
-                                     ( func.datetime(Work.start) < date_max )
-                                   ).order_by(Work.service_id)
+        work = Work.query.filter((Work.username == username ) &
+                                 (func.datetime(Work.start) > date_min) &
+                                 (func.datetime(Work.start) < date_max)
+                                 ).order_by(Work.service_id)
 
-        oncall = Oncall.query.filter( (Oncall.username == username) &
-                                      (func.datetime(Oncall.start) > date_min ) &
-                                      (func.datetime(Oncall.start) < date_max )
-                                    ).order_by(Oncall.service)
+        oncall = Oncall.query.filter((Oncall.username == username) &
+                                     (func.datetime(Oncall.start) > date_min ) &
+                                     (func.datetime(Oncall.start) < date_max )
+                                     ).order_by(Oncall.service)
 
-        absence = Absence.query.filter( (Absence.username == username) &
-                                        (func.datetime(Absence.start) > date_min) &
-                                        ( func.datetime(Absence.stop) < date_max)
-                                      ).all()
+        absence = Absence.query.filter((Absence.username == username) &
+                                       (func.datetime(Absence.start) > date_min) &
+                                       (func.datetime(Absence.stop) < date_max)
+                                       ).all()
 
     else:
         work = Work.query.filter(func.datetime(Work.start) > date_min,
-                        func.datetime(Work.start) < date_max
-                        ).order_by(Work.service_id)
+                                 func.datetime(Work.start) < date_max
+                                 ).order_by(Work.service_id)
 
-        oncall = Oncall.query.filter( (func.datetime(Oncall.start) > date_min ) &
-                                  (func.datetime(Oncall.start) < date_max )
-                                ).order_by(Oncall.service)
+        oncall = Oncall.query.filter((func.datetime(Oncall.start) > date_min) &
+                                     (func.datetime(Oncall.start) < date_max)
+                                     ).order_by(Oncall.service)
 
-        absence = Absence.query.filter(     func.datetime(Absence.start) > date_min,
-                                            func.datetime(Absence.stop) < date_max
-                                            ).all()
-
+        absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
+                                       func.datetime(Absence.stop) < date_max
+                                       ).all()
 
     reminderHours = current_app.config['ICAL_REMINDER_MINS']
     cal = icale()
@@ -109,7 +109,7 @@ def ical():
     utc = pytz.utc
 
     for w in work:
-        user = User.query.filter_by(username = w.username).first()
+        user = User.query.filter_by(username=w.username).first()
         event = Event()
         event.add('summary', "%s@%s" % (w.username, w.service.name))
 
@@ -131,7 +131,6 @@ def ical():
         alarm.add("TRIGGER;RELATED=START", "-PT{0}H".format(reminderHours))
         event.add_component(alarm)
         cal.add_component(event)
-
 
     for oc in oncall:
         event = Event()
@@ -159,8 +158,6 @@ def ical():
         event.add_component(alarm)
         cal.add_component(event)
 
-
-
     for ab in absence:
         event = Event()
         user = User.query.filter(User.username == ab.username).first()
@@ -184,7 +181,6 @@ def ical():
         alarm.add("TRIGGER;RELATED=START", "-PT{0}H".format(reminderHours))
         event.add_component(alarm)
         cal.add_component(event)
-
 
     response = current_app.make_response(cal.to_ical())
     response.headers["Content-Disposition"] = "attachment; filename=calendar.ics"

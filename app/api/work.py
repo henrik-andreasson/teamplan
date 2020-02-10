@@ -32,9 +32,13 @@ def create_work():
     db.session.commit()
     response = jsonify(work.to_dict())
     if current_app.config['ROCKET_ENABLED']:
-        rocket = RocketChat(current_app.config['ROCKET_USER'], current_app.config['ROCKET_PASS'], server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('new work: %s\t%s\t%s\t@%s ' % (work.start,work.stop,work.service,work.username), channel=current_app.config['ROCKET_CHANNEL']).json()
-
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+        chatmsg = 'new work: %s\t%s\t%s\t@%s ' % (work.start, work.stop,
+                                                  work.service, work.username)
+        rocket.chat_post_message(chatmsg,
+                                 channel=current_app.config['ROCKET_CHANNEL']).json()
 
     response.status_code = 201
     response.headers['Location'] = url_for('api.get_work', id=work.id)
@@ -46,7 +50,8 @@ def create_work():
 def get_worklist():
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 10, type=int), 100)
-    data = Work.to_collection_dict(Work.query, page, per_page, 'api.get_worklist')
+    data = Work.to_collection_dict(Work.query, page, per_page,
+                                   'api.get_worklist')
     return jsonify(data)
 
 
@@ -61,7 +66,8 @@ def get_work(id):
 def update_work(id):
     work = Work.query.get_or_404(id)
     data = request.get_json() or {}
-    if 'username' in data and User.query.filter_by(username=data['username']).first():
+    user = User.query.filter_by(username=data['username']).first()
+    if 'username' in data or user:
         return bad_request('please use a different username')
 
     work.from_dict(data, new_work=False)

@@ -1,10 +1,12 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField
-from wtforms.fields.html5 import DateField, DateTimeField
+from wtforms import StringField, SubmitField, TextAreaField, SelectField, \
+    SelectMultipleField
+from wtforms.fields.html5 import DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
 from app.models import User
 from datetime import datetime
+
 
 class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), validators=[DataRequired()])
@@ -32,6 +34,7 @@ class ServiceForm(FlaskForm):
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
 
+
 class WorkForm(FlaskForm):
     username = SelectField(_l('Username'))
     service = SelectField(_l('service'), validators=[DataRequired()])
@@ -58,19 +61,21 @@ class GenrateMonthWorkForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
 
+
 class AbsenceForm(FlaskForm):
     username = SelectField(_l('Username'))
     status = SelectField(_l('Status'), choices=[('requested', 'Requested'),
                                                 ('approved', 'Approved'),
                                                 ('denied', 'Denied')])
     start = DateTimeField(_l('Start absence'), validators=[DataRequired()],
-                          format='%Y-%m-%d %H:%M',default=datetime.now())
+                          format='%Y-%m-%d %H:%M', default=datetime.now())
     stop = DateTimeField(_l('Stop absence'),
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
+
 
 class OncallForm(FlaskForm):
     username = SelectField(_l('Username'))
@@ -80,7 +85,7 @@ class OncallForm(FlaskForm):
                                                 ('wants-out', 'Wants out'),
                                                 ('needs-out', 'Needs out')])
     start = DateTimeField(_l('Start Oncall'), validators=[DataRequired()],
-                          format='%Y-%m-%d %H:%M',default=datetime.now())
+                          format='%Y-%m-%d %H:%M', default=datetime.now())
     stop = DateTimeField(_l('Stop Oncall'),
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
@@ -88,13 +93,16 @@ class OncallForm(FlaskForm):
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
 
+
 class NonWorkingDaysForm(FlaskForm):
-    name = StringField(_l('name'), validators=[DataRequired()],
-                        default="Non Working Day")
-    start = DateTimeField(_l('Start Non Working Day'), validators=[DataRequired()],
-                          format='%Y-%m-%d %H:%M',default=datetime.now())
-    stop = DateTimeField(_l('Stop Non Working Day'), validators=[DataRequired()],
-                        format='%Y-%m-%d %H:%M', default=datetime.now())
+    name = StringField(_l('name'),
+                       validators=[DataRequired()], default="Non Working Day")
+    start = DateTimeField(_l('Start Non Working Day'),
+                          validators=[DataRequired()],
+                          format='%Y-%m-%d %H:%M', default=datetime.now())
+    stop = DateTimeField(_l('Stop Non Working Day'),
+                         validators=[DataRequired()],
+                         format='%Y-%m-%d %H:%M', default=datetime.now())
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
