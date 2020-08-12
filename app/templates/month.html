@@ -170,21 +170,28 @@
                 {% endset %}
 
                 {% if w.status == "wants-out" %}
-                  {% set help_wanted %} ! {% endset %}
+                  {% set help_wanted %}
+                  <img src="/static/help.png" alt="?"/>
+                  {% endset %}
                 {% endif %}
                 {% if w.status == "needs-out" %}
-                  {% set help_wanted %} !! {% endset %}
+                  {% set help_wanted %}
+                  <img src="/static/warn.png" alt="!"/>
+                  {% endset %}
                 {% endif %}
                 {% if w.status == "unassigned" %}
-                    {% set help_wanted %} ? {% endset %}
+                    {% set help_wanted %}
+                    <img src="/static/who.png" alt="?"/>
+                    {% endset %}
                 {% endif %}
 
 
                 <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item" style="background: {{w.color}}">
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
-                                        username=w.username, service=w.service.name) }}</h4></div>
+                                        username=w.username, service=w.service.name) }} {{help_wanted}}</h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
-                                        hr_start=hr_start, hr_stop=hr_stop) }} {{help_wanted}}</p></div>
+                                        hr_start=hr_start, hr_stop=hr_stop) }} </p></div>
+
                 </a>
 
 

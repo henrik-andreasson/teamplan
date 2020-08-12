@@ -651,8 +651,10 @@ def work_edit():
         work.username = form.username.data
         work.color = service.color
         work.status = form.status.data
+        if work.status == "unassigned":
+            work.username = None
         work.service = service
-
+ 
         db.session.commit()
         flash(_('Your changes have been saved.'))
 
