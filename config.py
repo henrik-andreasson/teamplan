@@ -30,3 +30,6 @@ class Config(object):
     ICAL_REMINDER_MINS = os.environ.get('ICAL_REMINDER_MINS') or "60"
     ICAL_INVITE_FROM = os.environ.get('ICAL_INVITE_FROM') or "schema@localhost"
     ICAL_UID_DOMAIN = os.environ.get('ICAL_UID_DOMAIN') or "localhost"
+
+# local means dont use CDN
+    BOOTSTRAP_SERVE_LOCAL = os.environ.get('BOOTSTRAP_SERVE_LOCAL') or True
