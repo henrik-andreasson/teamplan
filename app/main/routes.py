@@ -25,7 +25,7 @@ def before_request():
     g.locale = str(get_locale())
 
 
-def service_stat_month(month,service=None,user=None,month_info=None):
+def service_stat_month(month, service=None, user=None, month_info=None):
 
     if user is None:
         users = User.query.order_by(User.username.desc())
@@ -171,15 +171,15 @@ def index():
 
                 absence = []
                 if service is not None and username is not None:
-                    work = Work.query.filter((Work.service_id == service_obj.id) &
-                                             (Work.username == username) &
-                                             (func.datetime(Work.start) > date_min) &
-                                             (func.datetime(Work.stop) < date_max)
+                    work = Work.query.filter((Work.service_id == service_obj.id)
+                                             & (Work.username == username)
+                                             & (func.datetime(Work.start) > date_min)
+                                             & (func.datetime(Work.stop) < date_max)
                                              ).order_by(Work.start)
 
-                    oncall = Oncall.query.filter((Oncall.service == service) &
-                                                 (func.datetime(Oncall.start) > date_min) &
-                                                 (func.datetime(Oncall.stop) < date_max)
+                    oncall = Oncall.query.filter((Oncall.service == service)
+                                                 & (func.datetime(Oncall.start) > date_min)
+                                                 & (func.datetime(Oncall.stop) < date_max)
                                                  ).order_by(Oncall.start)
 
                     absence = Absence.query.filter(username == username,
@@ -188,14 +188,14 @@ def index():
                                                    ).all()
 
                 elif service is not None:
-                    work = Work.query.filter((Work.service_id == service_obj.id) &
-                                             (func.datetime(Work.start) > date_min) &
-                                             (func.datetime(Work.stop) < date_max)
+                    work = Work.query.filter((Work.service_id == service_obj.id)
+                                             & (func.datetime(Work.start) > date_min)
+                                             & (func.datetime(Work.stop) < date_max)
                                              ).order_by(Work.start)
 
-                    oncall = Oncall.query.filter((Oncall.service == service) &
-                                                 (func.datetime(Oncall.start) > date_min) &
-                                                 (func.datetime(Oncall.stop) < date_max)
+                    oncall = Oncall.query.filter((Oncall.service == service)
+                                                 & (func.datetime(Oncall.start) > date_min)
+                                                 & (func.datetime(Oncall.stop) < date_max)
                                                  ).order_by(Oncall.start)
 
                     for u in service_obj.users:
@@ -210,9 +210,9 @@ def index():
                                              func.datetime(Work.stop) < date_max
                                              ).order_by(Work.start)
 
-                    oncall = Oncall.query.filter((Oncall.username == username) &
-                                                 (func.datetime(Oncall.start) > date_min ) &
-                                                 (func.datetime(Oncall.start) < date_max )
+                    oncall = Oncall.query.filter((Oncall.username == username)
+                                                 & (func.datetime(Oncall.start) > date_min)
+                                                 & (func.datetime(Oncall.start) < date_max)
                                                  ).order_by(Oncall.service)
 
                     absence = Absence.query.filter(username == username,
@@ -224,21 +224,21 @@ def index():
                     services = Service.query.all()
                     work = []
                     for s in services:
-                        w = Work.query.filter((Work.service_id == s.id) &
-                                              (func.datetime(Work.start) > date_min) &
-                                              (func.datetime(Work.stop) < date_max)
+                        w = Work.query.filter((Work.service_id == s.id)
+                                              & (func.datetime(Work.start) > date_min)
+                                              & (func.datetime(Work.stop) < date_max)
                                               ).order_by(Work.start)
                         work += w
-                    oncall = Oncall.query.filter((func.datetime(Oncall.start) > date_min ) &
-                                                 (func.datetime(Oncall.start) < date_max )
+                    oncall = Oncall.query.filter((func.datetime(Oncall.start) > date_min)
+                                                 & (func.datetime(Oncall.start) < date_max)
                                                  ).order_by(Oncall.service)
 
                     absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
                                                    func.datetime(Absence.stop) < date_max
                                                    ).all()
 
-                nonworkingdays = NonWorkingDays.query.filter((func.datetime(NonWorkingDays.start) > date_min ) &
-                                                             (func.datetime(NonWorkingDays.start) < date_max )
+                nonworkingdays = NonWorkingDays.query.filter((func.datetime(NonWorkingDays.start) > date_min)
+                                                             & (func.datetime(NonWorkingDays.start) < date_max)
                                                              ).all()
                 if weekday not in working_days:
                     # TODO does not accounts for half days off
@@ -430,8 +430,8 @@ def ical_info():
 @login_required
 def ical_reset_api_key():
 
-    api_key = current_user.revoke_api_key()
-    api_key = current_user.get_api_key()
+    current_user.revoke_api_key()
+    current_user.get_api_key()
 
     services = Service.query.all()
     return render_template('ical_info.html', title=_('Ical Info'),
@@ -499,8 +499,8 @@ def work_add():
             date_start_str = month + "-" + day + " 08:00"
             date_stop_str = month + "-" + day + " 12:30"
 
-            form.start.data =  datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
-            form.stop.data =  datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
+            form.start.data = datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
+            form.stop.data = datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
 
         # TODO figure out how to show work added by the current user this session
         allwork = Work.query.order_by(Work.id.desc()).limit(10)
@@ -541,12 +541,12 @@ def work_add_month():
                 continue
             if weekday < calendar.SATURDAY:
 
-                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"08", "00")
-                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"12", "30")
+                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
+                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
                 work = Work(start=datetime.strptime(start, "%Y-%m-%d %H:%M"),
                             stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
                             color=service.color,
-                            status = status)
+                            status=status)
                 if status == "assigned":
                     user = random.choice(service.users)
                     work.username = user.username
@@ -555,8 +555,8 @@ def work_add_month():
                 db.session.add(work)
                 db.session.commit()
 
-                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"12", "30")
-                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i,"17", "00")
+                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
+                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "17", "00")
                 work = Work(start=datetime.strptime(start, "%Y-%m-%d %H:%M"),
                             stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
                             color=service.color,
@@ -706,9 +706,9 @@ def absence_add():
     absence = Absence.query.order_by(Absence.start).paginate(
               page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=absence.next_num) \
+    next_url = url_for('main.absence_list', page=absence.next_num) \
         if absence.has_next else None
-    prev_url = url_for('main.index', page=absence.prev_num) \
+    prev_url = url_for('main.absence_list', page=absence.prev_num) \
         if absence.has_prev else None
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -801,9 +801,9 @@ def absence_list():
         absence = Absence.query.order_by(Absence.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=absence.next_num) \
+    next_url = url_for('main.absence_list', page=absence.next_num) \
         if absence.has_next else None
-    prev_url = url_for('main.index', page=absence.prev_num) \
+    prev_url = url_for('main.absence_list', page=absence.prev_num) \
         if absence.has_prev else None
 
     return render_template('absence.html', title=_('absence'),
@@ -822,13 +822,13 @@ def absence_delete():
         flash(_('Absence was not deleted, id not found!'))
         return redirect(url_for('main.index'))
 
-    deleted_msg='Absence deleted: %s\t%s\t%s\n' % (absence.start,absence.stop,absence.username)
+    deleted_msg = 'Absence deleted: %s\t%s\t%s\n' % (absence.start, absence.stop, absence.username)
     if current_app.config['ROCKET_ENABLED']:
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
         rocket.chat_post_message('absence deleted: \n%s\nto:\n%s\nby: %s' % (
-                             deleted_msg,current_user.username),
+                             deleted_msg, current_user.username),
                              channel=current_app.config['ROCKET_CHANNEL']
                              ).json()
     flash(deleted_msg)
@@ -863,8 +863,10 @@ def oncall_add():
         flash(_('New oncall is now posted!'))
 
         new_oncall_mess = 'new oncall: %s\t%s\t%s\t@%s\nby %s\n ' % (oncall.start,
-                         oncall.stop, oncall.service,
-                         oncall.username, current_user.username)
+                                                                     oncall.stop,
+                                                                     oncall.service,
+                                                                     oncall.username,
+                                                                     current_user.username)
         if current_app.config['ROCKET_ENABLED']:
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
@@ -951,9 +953,9 @@ def oncall_list():
         oncall = Oncall.query.order_by(Oncall.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=oncall.next_num) \
+    next_url = url_for('main.oncall_list', page=oncall.next_num) \
         if oncall.has_next else None
-    prev_url = url_for('main.index', page=oncall.prev_num) \
+    prev_url = url_for('main.oncall_list', page=oncall.prev_num) \
         if oncall.has_prev else None
 
     return render_template('oncall.html', title=_('oncall'),
@@ -1010,7 +1012,7 @@ def nonworkingdays_add():
         if current_app.config['ROCKET_ENABLED']:
             new_nonworkingdays_mess = 'new nonworkingdays: %s\t%s\t%s\nby %s\n ' % (nonworkingdays.start,
                                                                                     nonworkingdays.stop, nonworkingdays.name,
-                         current_user.username)
+                                                                                    current_user.username)
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
                                 server_url=current_app.config['ROCKET_URL'])
@@ -1083,9 +1085,9 @@ def nonworkingdays_list():
     nonworkingdays = NonWorkingDays.query.order_by(NonWorkingDays.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.index', page=nonworkingdays.next_num) \
+    next_url = url_for('main.nonworkingdays_list', page=nonworkingdays.next_num) \
         if nonworkingdays.has_next else None
-    prev_url = url_for('main.index', page=nonworkingdays.prev_num) \
+    prev_url = url_for('main.nonworkingdays_list', page=nonworkingdays.prev_num) \
         if nonworkingdays.has_prev else None
 
     return render_template('nonworkingdays.html', title=_('nonworkingdays'),
