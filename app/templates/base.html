@@ -1,48 +1,87 @@
 {% extends 'bootstrap/base.html' %}
 
 {% block title %}
-    {% if title %}{{ title }} - Team Planning {% else %}{{ _('Welcome to Team Planning') }}{% endif %}
+    {% if title %}{{ title }} - {% else %}{{ _('Welcome to Inventorpy') }}{% endif %}
 {% endblock %}
 
 {% block navbar %}
-    <nav class="navbar navbar-default">
-        <div class="container">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="{{ url_for('main.index') }}">Team Planning</a>
-            </div>
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li class="nav-item"><a href="{{ url_for('main.index') }}">{{ _('Home') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.explore') }}">{{ _('Help') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.work_add') }}">{{ _('Work') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.oncall_add') }}">{{ _('Oncall') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.service_add') }}">{{ _('Service') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.absence_add') }}">{{ _('Absence') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.nonworkingdays_add') }}">{{ _('Non Working Days') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.ical_info') }}">{{ _('ICal Info') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('main.work_add_month') }}">{{ _('Generate Month') }}</a></li>
-                </ul>
-                <ul class="nav navbar-nav navbar-right">
-                    {% if current_user.is_anonymous %}
-                    <li class="nav-item"><a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a></li>
-                    {% else %}
-                    <li class="nav-item"><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
-                    <li class="nav-item"><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
+
+<!-- navbar-fixed-top dont work ... -->
+<nav class="navbar navbar-inverse ">
+ <div class="container-fluid">
+   <div class="navbar-header">
+     <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+       <span class="icon-bar"></span>
+       <span class="icon-bar"></span>
+       <span class="icon-bar"></span>
+     </button>
+     <a class="navbar-brand" href="/">Team Planning</a>
+   </div>
+   {% if current_user.is_authenticated %}
+  <div class="collapse navbar-collapse" id="myNavbar">
+   <ul class="nav navbar-nav">
+     <li class="dropdown">
+         <a class="dropdown-toggle" data-toggle="dropdown" href="#">Service
+         <span class="caret"></span></a>
+         <ul class="dropdown-menu">
+           <li class="nav-item"><a href="{{ url_for('main.service_list') }}">{{ _('List Service') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.service_add') }}">{{ _('Add Service') }}</a></li>
+         </ul>
+     </li>
+     <li class="dropdown">
+         <a class="dropdown-toggle" data-toggle="dropdown" href="#">Work
+         <span class="caret"></span></a>
+         <ul class="dropdown-menu">
+           <li class="nav-item"><a href="{{ url_for('main.work_list') }}">{{ _('List Work') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.work_add') }}">{{ _('Add Work') }}</a></li>
+         </ul>
+     </li>
+     <li class="dropdown">
+         <a class="dropdown-toggle" data-toggle="dropdown" href="#">On-Call
+         <span class="caret"></span></a>
+         <ul class="dropdown-menu">
+           <li class="nav-item"><a href="{{ url_for('main.oncall_list') }}">{{ _('List Oncall') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.oncall_add') }}">{{ _('Add Oncall') }}</a></li>
+         </ul>
+     </li>
+     <li class="dropdown">
+         <a class="dropdown-toggle" data-toggle="dropdown" href="#">Absence
+         <span class="caret"></span></a>
+         <ul class="dropdown-menu">
+           <li class="nav-item"><a href="{{ url_for('main.absence_list') }}">{{ _('List Absence') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.absence_add') }}">{{ _('Add Absence') }}</a></li>
+         </ul>
+     </li>
+     <li class="dropdown">
+         <a class="dropdown-toggle" data-toggle="dropdown" href="#">Non Working Days
+         <span class="caret"></span></a>
+         <ul class="dropdown-menu">
+           <li class="nav-item"><a href="{{ url_for('main.nonworkingdays_list') }}">{{ _('List Non Working Days') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.nonworkingdays_add') }}">{{ _('Add Non Working Days') }}</a></li>
+         </ul>
+     </li>
+
+     <li class="nav-item"><a href="{{ url_for('main.ical_info') }}">{{ _('ICal Info') }}</a></li>
+     <li class="nav-item"><a href="{{ url_for('main.work_add_month') }}">{{ _('Generate Month') }}</a></li>
+     <li class="nav-item"><a href="{{ url_for('main.explore') }}">{{ _('Help') }}</a></li>
+   </ul>
+   {% endif %}
+
+   <ul class="nav navbar-nav navbar-right">
+       {% if current_user.is_anonymous %}
+       <li class="nav-item"><a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a></li>
+       {% else %}
+       <li class="nav-item"><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
+       <li class="nav-item"><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
+       {% endif %}
+   </ul>
+
+ </div>
+</nav>
 {% endblock %}
 
 {% block content %}
-    <div class="container">
+    <div class="container-fluid" style="margin-left:5%;margin-right:5%;margin-top:70px">
         {% with messages = get_flashed_messages() %}
         {% if messages %}
             {% for message in messages %}
@@ -50,7 +89,7 @@
             {% endfor %}
         {% endif %}
         {% endwith %}
-
+        <h1> {% if title %} {{ title }} {% else %}{{ _('Welcome to Team Plan') }}{% endif %}</h1>
         {# application content needs to be provided in the app_content block #}
         {% block app_content %}{% endblock %}
     </div>
@@ -61,4 +100,5 @@
 
     {{ moment.include_moment() }}
     {{ moment.lang(g.locale) }}
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 {% endblock %}
