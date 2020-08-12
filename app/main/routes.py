@@ -389,31 +389,37 @@ def service_edit():
 
     servicename = request.args.get('name')
     service = Service.query.filter_by(name=servicename).first()
-
     if service is None:
         render_template('service.html', title=_('Service is not defined'))
 
     form = ServiceForm(formdata=request.form, obj=service)
-# TODO select the previously selected users: service.users
-    form.users.choices = [(u.username, u.username)
-                          for u in User.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
         # TODO remove not selected users ...
+        service.users = []
         for u in form.users.data:
-            user = User.query.filter_by(username=u).first()
+            user = User.query.filter_by(id=u).first()
             print("Adding: User: %s to: %s" % (user.username, service.name))
             service.users.append(user)
+        service.manager = User.query.filter_by(id=form.manager.data).first()
         service.name = form.name.data
         service.color = form.color.data
 
         db.session.commit()
+
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.service_list'))
 
     else:
+
+        pre_selected_users = [(su.id) for su in service.users]
+        form = ServiceForm(users=pre_selected_users)
+        form.manager.data = service.manager_id
+        form.name.data = service.name
+        form.color.data = service.color
         return render_template('service.html', title=_('Edit Service'),
                                form=form)
+
 
 
 @bp.route('/service/list/', methods=['GET', 'POST'])
@@ -654,7 +660,7 @@ def work_edit():
         if work.status == "unassigned":
             work.username = None
         work.service = service
- 
+
         db.session.commit()
         flash(_('Your changes have been saved.'))
 

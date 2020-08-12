@@ -8,6 +8,7 @@
       <td>{{_('Service')}}</td>
       <td>{{_('Users')}}</td>
       <td>{{_('Color')}}</td>
+      <td>{{_('Manager')}}</td>
     </tr>
 
     {% for service in services %}
@@ -31,6 +32,9 @@
           <div style="background: {{service.color}}">
               {{ service.color }}
            </div>
+        </td>
+        <td>
+            {{ service.manager.username }}
         </td>
 
         </tr>

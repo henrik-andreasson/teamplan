@@ -29,10 +29,16 @@ class EditProfileForm(FlaskForm):
 class ServiceForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()])
     color = StringField(_l('color'), validators=[DataRequired()])
-    users = SelectMultipleField(_l('Users'), validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
+    users = SelectMultipleField(_l('Users'), coerce=int, render_kw={"size": 20})
+    manager = SelectField(_l('Manager'), validators=[DataRequired()], coerce=int)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.users.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.manager.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
 
 
 class WorkForm(FlaskForm):
