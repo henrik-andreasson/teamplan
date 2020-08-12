@@ -2,7 +2,26 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <h1>{{ _('Non Working Days') }}</h1>
+
+
+    {% if allnwd %}
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Prevoius') }}
+                </a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+
     <table class="table table-hover">
       <tr>
         <td>  {{ _('Name') }} </td>
@@ -10,6 +29,7 @@
         <td>  {{ _('Stop') }} </td>
         <td>  {{ _('Edit') }} </td>
       </tr>
+
 
 
       {% for nwd in allnwd %}
@@ -25,20 +45,22 @@
         </tr>
         {% endfor %}
     </table>
+    {% if allnwd %}
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
                 <a href="{{ prev_url or '#' }}">
-                    <span aria-hidden="true">&larr;</span> {{ _('Newer') }}
+                    <span aria-hidden="true">&larr;</span> {{ _('Prevoius') }}
                 </a>
             </li>
             <li class="next{% if not next_url %} disabled{% endif %}">
                 <a href="{{ next_url or '#' }}">
-                    {{ _('Older') }} <span aria-hidden="true">&rarr;</span>
+                    {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
                 </a>
             </li>
         </ul>
     </nav>
+    {% endif %}
     <hr>
     {% if form %}
     {{ wtf.quick_form(form) }}

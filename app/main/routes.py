@@ -74,7 +74,8 @@ def service_stat_month(month, service=None, user=None, month_info=None):
         stat_user['user_all_work'] = user_all_work
         stat_user['user_work_hrs'] = user_work_hrs.total_seconds() / 3600
         stat_user['user_work_sec'] = user_work_hrs.total_seconds()
-        stat_user['user_work_percent'] = '{:03.1f} %'.format(stat_user['user_work_sec'] / month_info['working_sec_in_month'] * 100)
+        if month_info is not None and 'working_sec_in_month' in month_info:
+            stat_user['user_work_percent'] = '{:03.1f} %'.format(stat_user['user_work_sec'] / month_info['working_sec_in_month'] * 100)
 
         if user_all_work > 0:
             stats.append(stat_user)
@@ -297,9 +298,23 @@ def index():
 @login_required
 def explore():
 
+    dt_today = datetime.utcnow()
+    now_day = '{:02d}'.format(dt_today.day)
+    now_month = '{:02d}'.format(dt_today.month)
+
+    date_min = "%s-%s-%s 00:00:00" % (dt_today.year, now_month, now_day)
+    all = request.args.get('all', 0, type=int)
     page = request.args.get('page', 1, type=int)
-    work = Work.query.filter(Work.status != "assigned").paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+
+    if all:
+        work = Work.query.filter((Work.status != "assigned")).order_by(Work.start.desc()).paginate(
+                              page, current_app.config['POSTS_PER_PAGE'], False)
+    else:
+        work = Work.query.filter((Work.status != "assigned")
+                                 & (func.datetime(Work.start) > date_min)
+                                 ).order_by(Work.start.desc()).paginate(
+                              page, current_app.config['POSTS_PER_PAGE'], False)
+
     next_url = url_for('main.explore', page=work.next_num) \
         if work.has_next else None
     prev_url = url_for('main.explore', page=work.prev_num) \
@@ -321,6 +336,18 @@ def user(username):
     next_url = url_for('main.user', username=user.username, page=users_work.next_num) if users_work.has_next else None
     prev_url = url_for('main.user', username=user.username, page=users_work.prev_num) if users_work.has_prev else None
     return render_template('user.html', user=user, allwork=users_work.items,
+                           next_url=next_url, prev_url=prev_url)
+
+
+@bp.route('/user/list')
+@login_required
+def user_list():
+    page = request.args.get('page', 1, type=int)
+    users = User.query.order_by(User.username).paginate(page, current_app.config['POSTS_PER_PAGE'], False)
+
+    next_url = url_for('main.user_list', page=users.next_num) if users.has_next else None
+    prev_url = url_for('main.user_list', page=users.prev_num) if users.has_prev else None
+    return render_template('users.html', users=users.items,
                            next_url=next_url, prev_url=prev_url)
 
 
@@ -398,6 +425,7 @@ def service_list():
     next_url = url_for('main.service_list', page=services.next_num) if services.has_next else None
     prev_url = url_for('main.service_list', page=services.prev_num) if services.has_prev else None
     return render_template('services.html', services=services.items,
+                           title=_('List Services'),
                            next_url=next_url, prev_url=prev_url)
 
 
@@ -547,9 +575,22 @@ def work_add_month():
                             stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
                             color=service.color,
                             status=status)
+                print("New work, {}-{}".format(start,stop))
                 if status == "assigned":
-                    user = random.choice(service.users)
-                    work.username = user.username
+                    stats = service_stat_month(selected_month, service.name)
+                    user_with_least_hours = None
+
+                    # TODO weird sort ...
+                    least_worked_hours = 10000
+                    for user in stats:
+                        print("User: {} has {} h".format(user['username'], user['user_work_hrs']))
+                        if user['user_work_hrs'] < least_worked_hours:
+                            print("Selecting: {}({}) over {} ({})".format(user['username'], user['user_work_hrs'], user_with_least_hours, least_worked_hours))
+                            user_with_least_hours = user['username']
+                            least_worked_hours = user['user_work_hrs']
+                    #user = random.choice(service.users)
+                    work.username = user_with_least_hours
+                    print("Final Select: {}({})".format(user_with_least_hours, least_worked_hours))
 
                 work.service = service
                 db.session.add(work)
@@ -562,6 +603,7 @@ def work_add_month():
                             color=service.color,
                             status=status)
                 if status == "assigned":
+
                     user = random.choice(service.users)
                     work.username = user.username
 

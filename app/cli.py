@@ -2,10 +2,11 @@ from flask import current_app
 import click
 from pprint import pprint
 from rocketchat_API.rocketchat import RocketChat
-from app.models import Work
+from app.models import Work, User
 # from datetime import datetime
 from sqlalchemy import func
 import time
+from app import db
 
 
 def register(app):
@@ -44,3 +45,31 @@ def register(app):
             pprint(rocket.chat_post_message(msg, channel=current_app.
                                             config['ROCKET_CHANNEL']).json())
             time.sleep(1)
+
+    @app.cli.group()
+    def user():
+        """chat commands."""
+        pass
+
+    @user.command()
+    @click.argument('username')
+    @click.argument('password')
+    @click.argument('email')
+    def new(username, password, email):
+        """create new user."""
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+    @user.command()
+    @click.argument('username')
+    @click.argument('password')
+    def passwd(username, password):
+        """set password user."""
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            print("User not found")
+        else:
+            user.set_password(password)
+            db.session.commit()

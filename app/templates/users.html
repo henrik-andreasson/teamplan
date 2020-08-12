@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+  {% if users %}
+  <nav aria-label="...">
+      <ul class="pager">
+          <li class="previous{% if not prev_url %} disabled{% endif %}">
+              <a href="{{ prev_url or '#' }}">
+                  <span aria-hidden="true">&larr;</span> {{ _('Prevoius') }}
+              </a>
+          </li>
+          <li class="next{% if not next_url %} disabled{% endif %}">
+              <a href="{{ next_url or '#' }}">
+                  {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
+              </a>
+          </li>
+      </ul>
+  </nav>
+  {% endif %}
+
+  <table class="table table-hover">
+    <tr>
+        <td>  {{ _('User') }} </td>
+        <td>  {{ _('About') }}  </td>
+        <td>  {{ _('Services') }}  </td>
+        <td>  {{ _('Email') }} </td>
+        <td>  {{ _('Last seen') }} </td>
+    </tr>
+
+
+    {% for u in users %}
+    {% set user_link %}
+        <a href="{{ url_for('main.user', username=u.username) }}">
+            {{ u.username }}
+        </a>
+    {% endset %}
+
+      <tr>
+          <td>  {{ user_link }}  </td>
+          <td>  {{ u.about_me}} </td>
+          <td>
+            {% for service in u.services %}
+                {{ service.name }}
+            {% endfor %}
+         </td>
+         <td>  {{ u.email}} </td>
+         <td>  {{ u.last_seen }} </td>
+      </tr>
+      {% endfor %}
+  </table>
+
+    {% if users %}
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Prevoius') }}
+                </a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    {{ _('Next') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+{% endblock %}

@@ -63,7 +63,7 @@
 
      <li class="nav-item"><a href="{{ url_for('main.ical_info') }}">{{ _('ICal Info') }}</a></li>
      <li class="nav-item"><a href="{{ url_for('main.work_add_month') }}">{{ _('Generate Month') }}</a></li>
-     <li class="nav-item"><a href="{{ url_for('main.explore') }}">{{ _('Help') }}</a></li>
+     <li class="nav-item"><a href="{{ url_for('main.explore') }}">{{ _('Help needed') }}</a></li>
    </ul>
    {% endif %}
 
@@ -71,8 +71,18 @@
        {% if current_user.is_anonymous %}
        <li class="nav-item"><a href="{{ url_for('auth.login') }}">{{ _('Login') }}</a></li>
        {% else %}
-       <li class="nav-item"><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
-       <li class="nav-item"><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
+       <li class="dropdown">
+           <a class="dropdown-toggle" data-toggle="dropdown" href="#">User Management
+           <span class="caret"></span></a>
+           <ul class="dropdown-menu">
+             <li class="nav-item"><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
+             <li class="nav-item"><a href="{{ url_for('auth.change_password') }}">{{ _('Change Password') }}</a></li>
+             <li class="nav-item"><a href="{{ url_for('auth.register') }}">{{ _('Add User') }}</a></li>
+             <li class="nav-item"><a href="{{ url_for('main.user_list') }}">{{ _('List User') }}</a></li>
+             <li class="nav-item"><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
+           </ul>
+       </li>
+
        {% endif %}
    </ul>
 

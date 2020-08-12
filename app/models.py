@@ -55,7 +55,9 @@ class Service(PaginatedAPIMixin, db.Model):
     updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     color = db.Column(db.String(140))
     users = db.relationship('User', secondary=service_user)
-#    manager = db.relationship('Manager', secondary=service_user)
+    manager = db.relationship('User', foreign_keys='Service.manager_id')
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
     work = db.relationship("Work")
 
     def __repr__(self):
@@ -87,6 +89,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
+    services = db.relationship('Service', secondary=service_user)
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -197,7 +200,6 @@ class Work(PaginatedAPIMixin, db.Model):
     color = db.Column(db.String(140))
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
     service = db.relationship('Service')
-    #    service = db.Column(db.String(140))
 
     def __repr__(self):
         return '<Work {}>'.format(self.service_id)
