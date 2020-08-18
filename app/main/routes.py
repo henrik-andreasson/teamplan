@@ -320,6 +320,7 @@ def index():
     month_info['prev'] = prev_month.strftime("%b")
     month_info['this'] = selected_month.strftime("%Y %B")
     month_info['next'] = next_month.strftime("%b")
+    month_info['today'] = '{:02d}'.format(int(date.today().strftime("%d")))
     next_url = url_for('main.index', month=next_month.strftime("%Y-%m"))
     prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
 
