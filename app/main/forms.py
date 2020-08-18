@@ -4,7 +4,7 @@ from wtforms import StringField, SubmitField, TextAreaField, SelectField, \
 from wtforms.fields.html5 import DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
-from app.models import User
+from app.models import User, Service
 from datetime import datetime
 
 
@@ -42,8 +42,8 @@ class ServiceForm(FlaskForm):
 
 
 class WorkForm(FlaskForm):
-    username = SelectField(_l('Username'))
-    service = SelectField(_l('service'), validators=[DataRequired()])
+    user = SelectField(_l('Username'), coerce=int)
+    service = SelectField(_l('service'), validators=[DataRequired()], coerce=int)
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned'),
                                                 ('wants-out', 'Wants out'),
@@ -56,6 +56,11 @@ class WorkForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
 
 
 class GenrateMonthWorkForm(FlaskForm):
