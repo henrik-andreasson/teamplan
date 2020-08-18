@@ -156,9 +156,15 @@
 
               <div class="list-group dropdown">
                 {% if day['display_day']  %}
-                  <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item">
-                    {{ day['display_day'] }}
-                  </a>
+                  {% if day['display_day'] == month_info['today_day'] and month_info['selected_month'] == month_info['today_year_month'] %}
+                    <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item active">
+                      {{ day['display_day'] }}
+                    </a>
+                  {% else %}
+                    <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item">
+                      {{ day['display_day'] }}
+                    </a>
+                  {% endif %}
                 {% endif %}
                   {% for w in day['work'] %}
 
