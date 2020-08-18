@@ -66,24 +66,44 @@ def register(app):
         #                     current_app.config['ROCKET_PASS'],
         #                     server_url=current_app.config['ROCKET_URL'])
 
-        for w in work:
-            if w.status != "assigned":
-                msg = 'work : {}\t{}\t{}\t{}\t{} @{}'.format(w.start,
-                                                             w.stop,
-                                                             w.status,
-                                                             w.service.name,
-                                                             w.username,
-                                                             w.service.manager.username)
-                print("msg: {}".format(msg))
-            else:
-                msg = 'work: %s\t%s\t%s\t@%s \t%s' % (w.start, w.stop,
-                                                         w.service, w.username,
-                                                         w.status)
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
 
-                print(msg)
-#            pprint(rocket.chat_post_message(msg, channel=current_app.
-                                            #config['ROCKET_CHANNEL']).json())
-#            time.sleep(1)
+        for w in work:
+            if w.status == "unassigned":
+                msg = 'Hey manager: @{} assign these shifts/work : {}\t{}\t{}\t{}'.format(
+                        w.service.manager.username,
+                        w.start,
+                                  w.stop,
+                                  w.status,
+                                  w.service.name)
+
+            elif w.status == "needs-out":
+                msg = 'Hey manager: @{}, help @{} who needs-out from this shift\nservice:{} start:{} stop: {} status: *{}*'.format(
+                                    w.service.manager.username,
+                                    w.user.username,
+                                    w.service.name,
+                                    w.start,
+                                    w.stop,
+                                    w.status)
+
+            elif w.status == "wants-out":
+                msg = 'Hey team @all please find it in your heart to help @{} with this shift\n{}\t{}\t*{}*\t{}'.format(w.user.username,
+                                w.start,
+                                  w.stop,
+                                  w.status,
+                                  w.service.name)
+
+            else:
+                msg = 'weird work update: %s\t%s\t%s\t@%s \t%s' % (w.start, w.stop,
+                                                       w.service, w.user.username,
+                                                       w.status)
+
+            print(msg)
+            pprint(rocket.chat_post_message(msg, channel=current_app.
+                                            config['ROCKET_CHANNEL']).json())
+            time.sleep(3)
 
     @app.cli.group()
     def user():
