@@ -18,6 +18,10 @@ def create_service():
     if 'name' not in data or 'color' not in data:
         return bad_request('must include name and color fields')
 
+    check_service = Service.query.filter_by(name=data['name']).first()
+    if check_service is not None:
+        return bad_request('Service already exist with id: %s' % check_service.id)
+
     service = Service()
     service.from_dict(data, new_service=True)
 
@@ -40,9 +44,15 @@ def get_servicelist():
 
 
 @bp.route('/service/<int:id>', methods=['GET'])
+@bp.route('/service/<name>', methods=['GET'])
 @token_auth.login_required
-def get_service(id):
-    return jsonify(Service.query.get_or_404(id).to_dict())
+def get_service(id=None, name=None):
+    if id is not None:
+        return jsonify(Service.query.get_or_404(id).to_dict())
+    elif name is not None:
+        return jsonify(Service.query.filter_by(name=name).first_or_404().to_dict())
+    else:
+        return bad_request('must include service-name or -id')
 
 
 @bp.route('/service/<int:id>', methods=['PUT'])
@@ -55,20 +65,103 @@ def update_service(id):
     return jsonify(service.to_dict())
 
 
-@bp.route('/service/adduser', methods=['POST'])
-def add_user_to_service():
+@bp.route('/service/<servicename>/adduser/<username>', methods=['POST'])
+@token_auth.login_required
+def add_user_to_service(servicename=None, username=None):
 
-    data = request.get_json() or {}
-    if 'service' not in data or 'username' not in data:
-        return bad_request('must include service(name) and username fields')
+    if servicename is None:
+        return bad_request('must include servicename in url')
 
-    service = Service.query.filter_by(name=data['service']).first()
-    user = User.query.filter_by(username=data['username']).first()
+    if username is None:
+        return bad_request('must include username fields')
+
+    print("service: {} and user: {}".format(servicename, username))
+    service = Service.query.filter(Service.name == servicename).first_or_404()
+    user = User.query.filter(User.username == username).first()
+
+    if service is None:
+
+        retdata = {}
+        retdata['message'] = "Can not find service"
+        response = jsonify(retdata)
+        response.status_code = 403
+        return response
+
+    if user is None:
+        retdata = {}
+        retdata['message'] = "Can not find user"
+        retdata['user'] = username
+        response = jsonify(retdata)
+        response.status_code = 403
+        return response
+
+    for u in service.users:
+        if user.username == u.username:
+            return bad_request('User already member of the service')
 
     service.users.append(user)
     db.session.commit()
     response = jsonify(service.to_dict())
+    response.status_code = 201
+    response.headers['Location'] = url_for('api.get_service', id=service.id)
+    return response
 
+
+@bp.route('/service/<int:id>/users', methods=['GET'])
+@bp.route('/service/<name>/users', methods=['GET'])
+@token_auth.login_required
+def user_list(id=None, name=None):
+
+    if name is not None:
+        service = Service.query.filter(Service.name == name).first_or_404()
+    elif service is not None:
+        service = Service.query.get(id)
+    else:
+        return bad_request('must include service-name or id in URL')
+
+    if service is None:
+        return bad_request('Error retriving the service')
+
+    response = jsonify(service.users_dict())
+    response.status_code = 201
+    return response
+
+
+@bp.route('/service/<int:id>/manager/<username>', methods=['GET'])
+@bp.route('/service/<servicename>/manager/<username>', methods=['GET'])
+@token_auth.login_required
+def manager_of_service(servicename=None, id=None, username=None):
+
+    if servicename is None:
+        return bad_request('must include servicename in url')
+
+    if username is None:
+        return bad_request('must include username fields')
+
+    print("service: {} manager: {}".format(servicename, username))
+
+    service = Service.query.filter(Service.name == servicename).first_or_404()
+    user = User.query.filter_by(username=username).first()
+
+    if service is None:
+
+        retdata = {}
+        retdata['message'] = "Can not find service"
+        response = jsonify(retdata)
+        response.status_code = 403
+        return response
+
+    if user is None:
+        retdata = {}
+        retdata['message'] = "Can not find user"
+        retdata['user'] = username
+        response = jsonify(retdata)
+        response.status_code = 403
+        return response
+
+    service.manager = user
+    db.session.commit()
+    response = jsonify(service.to_dict())
     response.status_code = 201
     response.headers['Location'] = url_for('api.get_service', id=service.id)
     return response
