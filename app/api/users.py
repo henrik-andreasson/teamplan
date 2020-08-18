@@ -1,12 +1,11 @@
 from app.api import bp
-from flask import jsonify, current_app
+from flask import jsonify
 from app.models import User
 from flask import url_for
 from app import db
 from app.api.errors import bad_request
 from flask import request
 from app.api.auth import token_auth
-from flask import g, abort
 
 
 @bp.route('/users', methods=['POST'])
