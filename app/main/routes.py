@@ -14,7 +14,6 @@ from sqlalchemy import func
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
 import calendar
-import random
 
 
 @bp.before_app_request
@@ -37,6 +36,11 @@ def service_stat_month(month, service=None, user=None, month_info=None):
     else:
         services = Service.query.filter(Service.name == service)
 
+    if month is None:
+        return -1
+    else:
+        print("month: {}".format(month))
+
     next_month = month + relativedelta.relativedelta(months=1)
     start_year = '{:02d}'.format(month.year)
     start_month = '{:02d}'.format(month.month)
@@ -48,6 +52,7 @@ def service_stat_month(month, service=None, user=None, month_info=None):
     date_stop = "%s-%s-01 00:00:00" % (stop_year, stop_month)
     stats = []
     for u in users:
+        print("statuser: checking user: {}".format(u))
         stat_user = {}
         stat_user['username'] = u.username
         user_all_work = 0
@@ -55,7 +60,7 @@ def service_stat_month(month, service=None, user=None, month_info=None):
 
         for s in services:
             work_list = Work.query.filter(Work.service_id == s.id,
-                                          Work.username == u.username,
+                                          Work.user_id == u.id,
                                           func.datetime(Work.start) > date_start,
                                           func.datetime(Work.stop) < date_stop
                                           ).all()
@@ -79,6 +84,41 @@ def service_stat_month(month, service=None, user=None, month_info=None):
 
         if user_all_work > 0:
             stats.append(stat_user)
+    return stats
+
+
+def users_stats(month, service):
+
+    if month is None:
+        return -1
+    else:
+        print("month: {}".format(month))
+
+    next_month = month + relativedelta.relativedelta(months=1)
+    start_year = '{:02d}'.format(month.year)
+    start_month = '{:02d}'.format(month.month)
+
+    stop_year = '{:02d}'.format(next_month.year)
+    stop_month = '{:02d}'.format(next_month.month)
+
+    date_start = "%s-%s-01 00:00:00" % (start_year, start_month)
+    date_stop = "%s-%s-01 00:00:00" % (stop_year, stop_month)
+    stats = {}
+
+    for u in service.users:
+        user_work_hrs = timedelta(days=0, seconds=0)
+
+        work_list = Work.query.filter(Work.user_id == u.id,
+                                      func.datetime(Work.start) > date_start,
+                                      func.datetime(Work.stop) < date_stop
+                                      ).all()
+
+        for w in work_list:
+            user_work_hrs = user_work_hrs + (w.stop - w.start)
+
+        stats[u.username] = user_work_hrs.total_seconds() / 3600
+        print("users_stats: checking user: {} -> {}h".format(u.username, stats[u.username]))
+
     return stats
 
 
@@ -133,7 +173,17 @@ def index():
 
     if service is not None:
         service_obj = Service.query.filter_by(name=service).first()
-        print("service: %s id: %s" % (service, service_obj.id))
+        if service_obj is None:
+            service = None
+        else:
+            print("service: %s id: %s" % (service, service_obj.id))
+
+    if username is not None:
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            username = None
+        else:
+            print("user: %s id: %s" % (username, user.id))
 
     next_month = selected_month + relativedelta.relativedelta(months=1)
     prev_month = selected_month + relativedelta.relativedelta(months=-1)
@@ -173,7 +223,7 @@ def index():
                 absence = []
                 if service is not None and username is not None:
                     work = Work.query.filter((Work.service_id == service_obj.id)
-                                             & (Work.username == username)
+                                             & (Work.user_id == user.id)
                                              & (func.datetime(Work.start) > date_min)
                                              & (func.datetime(Work.stop) < date_max)
                                              ).order_by(Work.start)
@@ -206,7 +256,7 @@ def index():
                                                         ).all()
 
                 elif username is not None:
-                    work = Work.query.filter(Work.username == username,
+                    work = Work.query.filter(Work.user_id == user.id,
                                              func.datetime(Work.start) > date_min,
                                              func.datetime(Work.stop) < date_max
                                              ).order_by(Work.start)
@@ -331,7 +381,7 @@ def user(username):
     print("user: %s services: %s" % (user.username, user.services))
 
     page = request.args.get('page', 1, type=int)
-    users_work = Work.query.filter(Work.username == username).paginate(
+    users_work = Work.query.filter(Work.user_id == user.id).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.user', username=user.username, page=users_work.next_num) if users_work.has_next else None
     prev_url = url_for('main.user', username=user.username, page=users_work.prev_num) if users_work.has_prev else None
@@ -358,13 +408,11 @@ def service_add():
         return redirect(request.referrer)
 
     form = ServiceForm()
-    form.users.choices = [(u.username, u.username)
-                          for u in User.query.all()]
 
     if form.validate_on_submit():
         service = Service(name=form.name.data, color=form.color.data)
         for u in form.users.data:
-            user = User.query.filter_by(username=u).first()
+            user = User.query.get(u)
             print("Adding: User: %s to: %s" % (user.username, service.name))
             service.users.append(user)
         db.session.add(service)
@@ -419,7 +467,6 @@ def service_edit():
         form.color.data = service.color
         return render_template('service.html', title=_('Edit Service'),
                                form=form)
-
 
 
 @bp.route('/service/list/', methods=['GET', 'POST'])
@@ -480,41 +527,44 @@ def work_add():
         return redirect(request.referrer)
 
     if 'selected_user' in session:
-        form.username.default = session['selected_user']
         user = User.query.filter_by(username=session['selected_user']).first()
-        form.username.choices = [(user.username, user.username)]
+        form.user.data = user.id
         form.service.choices = []
         for s in Service.query.all():
             for serviceuser in s.users:
                 if serviceuser.username == user.username:
-                    form.service.choices.extend([(s.name, s.name)])
+                    form.service.choices.extend([(s.id, s.name)])
 
     elif 'selected_service' in session:
         service = Service.query.filter_by(name=session['selected_service']).first()
-        form.service.choices = [(service.name, service.name)]
-        form.username.choices = [(u.username, u.username)
-                                 for u in service.users]
-
-    else:
-        form.service.choices = [(s.name, s.name) for s in Service.query.all()]
-        form.username.choices = [(u.username, u.username)
-                                 for u in User.query.all()]
+        form.service.choices = [(service.id, service.name)]
+        form.user.choices = [(u.id, u.username)
+                             for u in service.users]
 
     if request.method == 'POST' and form.validate_on_submit():
-        service = Service.query.filter_by(name=form.service.data).first()
+        service = Service.query.get(form.service.data)
+        if service is None:
+            flash(_('Service not found'))
+            return redirect(request.referrer)
+
+        user = User.query.get(form.user.data)
+        if serviceuser is None:
+            flash(_('User not found'))
+            return redirect(request.referrer)
+
         work = Work(start=form.start.data,
                     stop=form.stop.data,
-                    username=form.username.data,
                     color=service.color,
                     status=form.status.data)
+        work.user = user
         work.service = service
         db.session.add(work)
         db.session.commit()
-        flash(_('New work is now posted!'))
+        flash(_('New work is now saved!'))
 
         new_work_mess = 'new work: %s\t%s\t%s\t@%s\nby %s\n ' % (
                          work.start, work.stop, work.service,
-                         work.username, current_user.username)
+                         work.user.username, current_user.username)
         if current_app.config['ROCKET_ENABLED']:
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
@@ -537,9 +587,69 @@ def work_add():
             form.stop.data = datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
 
         # TODO figure out how to show work added by the current user this session
-        allwork = Work.query.order_by(Work.id.desc()).limit(10)
         return render_template('work.html', title=_('Add Work'),
-                               form=form, allwork=allwork)
+                               form=form)
+
+
+def select_user_for_weighted_work(service, start, stop):
+    if service is None:
+        print("select_user_for_weighted_work: Service none")
+        return None
+
+    if start is None:
+        print("select_user_for_weighted_work: start none")
+        return None
+
+    if stop is None:
+        print("select_user_for_weighted_work: stop none")
+        return None
+
+    day_start = "%d-%02d-%02d %s:%s" % (start.year, start.month, start.day, "00", "00")
+    day_stop = "%d-%02d-%02d %s:%s" % (stop.year, stop.month, stop.day, "23", "59")
+
+    stats = users_stats(start, service)
+    import pprint
+    pp = pprint.PrettyPrinter()
+    pp.pprint(stats)
+    user_with_least_hours = None
+
+    # TODO weird sort ...
+    least_worked_hours = 10000
+
+    # check on how many services a user work
+    # TODO: able to add % work on a service then use that here
+
+    for user in stats:
+        user_obj = User.query.filter_by(username=user).first()
+        if user_obj is None:
+            continue
+        if user_obj.manual_schedule:
+            continue
+        alredy_working = Work.query.filter(Work.user_id == user_obj.id,
+                                           func.datetime(Work.start) >= day_start,
+                                           func.datetime(Work.stop) <= day_stop
+                                           ).all()
+
+        for w in alredy_working:
+            print("user: {} is already working {} to {} at: {} not assigning any work".format(w.user.username, w.start, w.stop, w.service))
+            continue
+
+        absentees = Absence.query.filter(Absence.username == user,
+                                         Absence.start <= start,
+                                         Absence.stop >= stop).all()
+
+        for a in absentees:
+            print("user: {} is absent during {} to {} not assigning any work".format(a.username, a.start, a.stop))
+            continue
+
+        print("User: {} has {} h".format(user, stats[user]))
+        if stats[user] < least_worked_hours:
+            print("Selecting: {}({}) over {} ({})".format(user, stats[user], user_with_least_hours, least_worked_hours))
+            user_with_least_hours = user
+            least_worked_hours = stats[user]
+
+    print("Final Select: {}({})\n".format(user_with_least_hours, least_worked_hours))
+    return user_with_least_hours
 
 
 @bp.route('/work/add/month', methods=['GET', 'POST'])
@@ -575,53 +685,70 @@ def work_add_month():
                 continue
             if weekday < calendar.SATURDAY:
 
-                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
-                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
-                work = Work(start=datetime.strptime(start, "%Y-%m-%d %H:%M"),
-                            stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
-                            color=service.color,
-                            status=status)
-                print("New work, {}-{}".format(start,stop))
-                if status == "assigned":
-                    stats = service_stat_month(selected_month, service.name)
-                    user_with_least_hours = None
+                fm_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
+                fm_stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
+                dt_fm_start = datetime.strptime(fm_start, "%Y-%m-%d %H:%M")
+                dt_fm_stop = datetime.strptime(fm_stop, "%Y-%m-%d %H:%M")
 
-                    # TODO weird sort ...
-                    least_worked_hours = 10000
-                    for user in stats:
-                        print("User: {} has {} h".format(user['username'], user['user_work_hrs']))
-                        if user['user_work_hrs'] < least_worked_hours:
-                            print("Selecting: {}({}) over {} ({})".format(user['username'], user['user_work_hrs'], user_with_least_hours, least_worked_hours))
-                            user_with_least_hours = user['username']
-                            least_worked_hours = user['user_work_hrs']
-                    #user = random.choice(service.users)
-                    work.username = user_with_least_hours
-                    print("Final Select: {}({})".format(user_with_least_hours, least_worked_hours))
+                allwork = Work.query.filter((Work.service_id == service.id)).all()
+                work_fm_exist = None
+                for w in allwork:
+                    if w.service.name == service.name and w.start == dt_fm_start and w.stop == dt_fm_stop:
+                        print("matching service, start and stop: {}".format(service.name))
+                        work_fm_exist = True
 
-                work.service = service
-                db.session.add(work)
-                db.session.commit()
+                if not work_fm_exist:
+                    work = Work(start=dt_fm_start,
+                                stop=dt_fm_stop,
+                                color=service.color,
+                                status=status)
+                    print("New work, {}-{}".format(fm_start, fm_stop))
+                    if status == "assigned":
+                        selected_username = select_user_for_weighted_work(service, dt_fm_start, dt_fm_stop)
+                        selected_user = User.query.filter_by(username=selected_username).first()
+                        if selected_user is not None:
+                            work.user = selected_user
+                        else:
+                            print("failed to find the user object from the username {}".format(selected_username))
 
-                start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
-                stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "17", "00")
-                work = Work(start=datetime.strptime(start, "%Y-%m-%d %H:%M"),
-                            stop=datetime.strptime(stop, "%Y-%m-%d %H:%M"),
-                            color=service.color,
-                            status=status)
-                if status == "assigned":
+                    work.service = service
+                    db.session.add(work)
+                    db.session.commit()
 
-                    user = random.choice(service.users)
-                    work.username = user.username
+                em_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
+                em_stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "17", "00")
+                dt_em_start = datetime.strptime(em_start, "%Y-%m-%d %H:%M")
+                dt_em_stop = datetime.strptime(em_stop, "%Y-%m-%d %H:%M")
 
-                work.service = service
-                db.session.add(work)
-                db.session.commit()
+                work_em_exist = None
+                for w in allwork:
+                    if w.service.name == service.name and w.start == dt_fm_start and w.stop == dt_fm_stop:
+                        print("matching service, start and stop: {}".format(service.name))
+                        work_em_exist = True
+
+                if not work_em_exist:
+
+                    work = Work(start=dt_em_start,
+                                stop=dt_em_stop,
+                                color=service.color,
+                                status=status)
+                    if status == "assigned":
+                        selected_username2 = select_user_for_weighted_work(service, dt_em_start, dt_em_stop)
+                        selected_user2 = User.query.filter_by(username=selected_username2).first()
+                        if selected_user2 is not None:
+                            work.user = selected_user2
+                        else:
+                            print("failed to find the user object from the username {}".format(selected_username2))
+
+                    work.service = service
+                    db.session.add(work)
+                    db.session.commit()
 
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.index'))
 
     else:
-
+        form.month.data = datetime.utcnow() + relativedelta.relativedelta(months=1)
         return render_template('generate_month_work.html', title=_('Add Work for a month'),
                                form=form)
 
@@ -643,10 +770,6 @@ def work_edit():
         render_template('service.html', title=_('Work is not defined'))
 
     form = WorkForm(formdata=request.form, obj=work)
-    service = Service.query.get(work.service_id)
-    form.username.choices = [(u.username, u.username)
-                             for u in User.query.all()]
-    form.service.choices = [(service.name, service.name)]
 
     if request.method == 'POST' and form.validate_on_submit():
         string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
@@ -678,6 +801,9 @@ def work_edit():
         return redirect(url_for('main.index'))
 
     else:
+        form.service.data = work.service_id
+        form.user.data = work.user_id
+
         return render_template('index.html', title=_('Edit Work'),
                                form=form)
 

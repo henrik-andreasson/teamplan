@@ -63,18 +63,25 @@ class Service(PaginatedAPIMixin, db.Model):
     def __repr__(self):
         return '<Service {}>'.format(self.name)
 
-    def to_dict(self):
-        data = {
-            'id': self.id,
-            'name': self.name,
-            'color': self.color,
-        }
+    def users_dict(self):
+        data = {}
+        for user in self.users:
+            data[user.username] = user.id
         return data
 
     def from_dict(self, data, new_service=False):
         for field in ['name', 'color']:
             if field in data:
                 setattr(self, field, data[field])
+
+    def to_dict(self):
+        data = {
+            'id': self.id,
+            'name': self.name,
+            'manager': self.manager_id,
+            'color': self.color,
+        }
+        return data
 
 
 class User(PaginatedAPIMixin, UserMixin, db.Model):
@@ -89,6 +96,8 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
+    manual_schedule = db.Column(db.Integer)
+    work_percent = db.Column(db.Integer)
     services = db.relationship('Service', secondary=service_user)
 
     def __repr__(self):
@@ -195,7 +204,8 @@ class Work(PaginatedAPIMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    username = db.Column(db.String(140))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User')
     status = db.Column(db.String(140))
     color = db.Column(db.String(140))
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
@@ -209,7 +219,7 @@ class Work(PaginatedAPIMixin, db.Model):
             'id': self.id,
             'start': self.start,
             'stop': self.stop,
-            'username': self.username,
+            'user_id': self.user_id,
             'service_id': self.service_id,
             'status': self.status,
             '_links': {
@@ -219,14 +229,39 @@ class Work(PaginatedAPIMixin, db.Model):
 
         return data
 
-    def from_dict(self, data, new_work=False):
-        for field in ['username', 'start', 'stop', 'service_id', 'status']:
+    def from_dict(self, data):
+        for field in ['color', 'status']:
             if field in data:
-                if field == "start" or field == "stop":
-                    date = datetime.strptime(data[field], "%Y-%m-%d %H:%M")
-                    setattr(self, field, date)
-                else:
-                    setattr(self, field, data[field])
+                setattr(self, 'status', data['status'])
+
+        for field in ['start', 'stop']:
+            if field in data:
+                date = datetime.strptime(data[field], "%Y-%m-%d %H:%M")
+                setattr(self, field, date)
+
+        service = None
+        if 'service_id' in data:
+            service = Service.query.get(data['service_id'])
+        elif 'service_name' in data:
+            service = Service.query.filter_by(name=data['service_name']).first()
+        else:
+            return {'msg': "no input for service id or name", 'success': False}
+
+        if service is not None:
+            self.service_id = service.id
+            self.color = service.color
+
+        if 'user_id' in data:
+            user = User.query.get(data['user_id'])
+        elif 'user_name' in data:
+            user = User.query.filter_by(username=data['user_name']).first()
+        else:
+            return {'msg': "no input for user id or name", 'success': False}
+
+        if user is not None:
+            self.user_id = user.id
+
+        return {'msg': "work created", 'success': True}
 
 
 class Absence(db.Model):
