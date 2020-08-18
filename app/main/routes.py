@@ -773,16 +773,21 @@ def work_edit():
 
     if request.method == 'POST' and form.validate_on_submit():
         string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                             work.service, work.username)
+                                             work.service, work.user.username)
         service = Service.query.filter_by(name=form.service.data).first()
+        if service is None:
+            print("service is none...")
+        else:
+            work.color = service.color
+            work.service = service
+
         work.start = form.start.data
         work.stop = form.stop.data
-        work.username = form.username.data
-        work.color = service.color
+        work.user_id = form.user.data
         work.status = form.status.data
+
         if work.status == "unassigned":
             work.username = None
-        work.service = service
 
         db.session.commit()
         flash(_('Your changes have been saved.'))
