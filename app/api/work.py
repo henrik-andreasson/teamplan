@@ -6,9 +6,8 @@ from app import db
 from app.api.errors import bad_request
 from flask import request
 from app.api.auth import token_auth
-from flask import g, abort
 from rocketchat_API.rocketchat import RocketChat
-from pprint import pprint
+from datetime import datetime
 
 
 @bp.route('/work', methods=['POST'])
@@ -16,17 +15,35 @@ from pprint import pprint
 def create_work():
     data = request.get_json() or {}
     if 'start' not in data or 'stop' not in data or \
-       'service' not in data:
-        return bad_request('must include start,stop,servicefields')
+       ('service_id' not in data and 'service_name' not in data):
+        return bad_request('must include start,stop and service_name or service_id')
+
+    if 'service_id' in data:
+        check_service = Service.query.filter_by(id=data['service_id']).first()
+    elif 'service_name' in data:
+        check_service = Service.query.filter_by(name=data['service_name']).first()
+
+    dt_start = datetime.strptime(data['start'], "%Y-%m-%d %H:%M")
+    dt_stop = datetime.strptime(data['stop'], "%Y-%m-%d %H:%M")
+
+    print("service: {}/{} start: {} stop {}".format(check_service.name, check_service.id, dt_start, dt_stop))
+
+    allwork = Work.query.filter((Work.service_id == check_service.id)).all()
+    for w in allwork:
+        # print("work: service: {} start: {} stop: {} user: {}".format(w.service.name, w.start, w.stop, w.user.username))
+        if w.service.name == check_service.name and w.start == dt_start and w.stop == dt_stop:
+            print("matching service, start and stop: {}".format(check_service.name))
+            status = {'msg': "service work record with matching start, stop and service exist", 'success': False, 'id': w.id}
+            return bad_request(status)
 
     work = Work()
-    work.from_dict(data, new_work=True)
+
     if 'status' not in data:
         work.status = "unassigned"
 
-    service = Service.query.filter_by(name=data['service']).first()
-    work.service_id = service.id
-    work.color = service.color
+    status = work.from_dict(data)
+    if status['success'] is False:
+        return bad_request(status['msg'])
 
     db.session.add(work)
     db.session.commit()
