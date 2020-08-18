@@ -7,6 +7,7 @@ from app.models import Work, User
 from sqlalchemy import func
 import time
 from app import db
+from datetime import datetime
 
 
 def register(app):
@@ -45,6 +46,44 @@ def register(app):
             pprint(rocket.chat_post_message(msg, channel=current_app.
                                             config['ROCKET_CHANNEL']).json())
             time.sleep(1)
+
+    @chat.command()
+    def helpneeded():
+        """send who works today."""
+
+        dt_today = datetime.utcnow()
+        now_day = '{:02d}'.format(dt_today.day)
+        now_month = '{:02d}'.format(dt_today.month)
+
+        date_min = "%s-%s-%s 00:00:00" % (dt_today.year, now_month, now_day)
+
+        print("looking for help needed after: {}".format(date_min))
+        work = Work.query.filter((Work.status != "assigned")
+                                 & (func.datetime(Work.start) > date_min)
+                                 ).order_by(Work.start)
+
+        # rocket = RocketChat(current_app.config['ROCKET_USER'],
+        #                     current_app.config['ROCKET_PASS'],
+        #                     server_url=current_app.config['ROCKET_URL'])
+
+        for w in work:
+            if w.status != "assigned":
+                msg = 'work : {}\t{}\t{}\t{}\t{} @{}'.format(w.start,
+                                                             w.stop,
+                                                             w.status,
+                                                             w.service.name,
+                                                             w.username,
+                                                             w.service.manager.username)
+                print("msg: {}".format(msg))
+            else:
+                msg = 'work: %s\t%s\t%s\t@%s \t%s' % (w.start, w.stop,
+                                                         w.service, w.username,
+                                                         w.status)
+
+                print(msg)
+#            pprint(rocket.chat_post_message(msg, channel=current_app.
+                                            #config['ROCKET_CHANNEL']).json())
+#            time.sleep(1)
 
     @app.cli.group()
     def user():
