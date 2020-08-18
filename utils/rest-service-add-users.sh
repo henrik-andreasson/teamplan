@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 if [ -f variables ] ; then
   . variables
   echo "URL: ${API_URL}"
@@ -29,18 +30,17 @@ else
 fi
 
 
-for row in $(cat $csvfile) ; do
-  echo "row: $row"
-  date=$(echo $row | cut -f1 -d\,)
-  starttime=$(echo $row | cut -f2 -d\,)
-  stoptime=$(echo $row | cut -f3 -d\,)
-  username=$(echo $row | cut -f4 -d\,)
-  servicename=$(echo $row | cut -f5 -d\,)
+IFS=$'\n'
+for row in $(cat "${csvfile}") ; do
 
-  http --verbose POST http://localhost:5000/api/work service_name="$servicename" \
-    start="$date $starttime" stop="$date $stoptime" status="assigned" user_name="$username" \
-     "Authorization:Bearer $token"
+  username=$(echo $row | cut -f1 -d\,)
+  servicename=$(echo $row | cut -f2 -d\,)
+  iscomment=$(echo $row | grep "^#" )
+  if [ "x$iscomment" != "x" ] ; then
+    continue
+  fi
 
-#  sleep 1
+  http --verify cacerts.pem --verbose POST "${API_URL}/service/${servicename}/adduser/${username}" \
+    "Authorization:Bearer $token"
 
 done
