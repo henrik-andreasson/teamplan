@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
 from flask_babel import _, lazy_gettext as _l
 from app.models import User
@@ -19,6 +19,11 @@ class RegistrationForm(FlaskForm):
     password2 = PasswordField(
         _l('Repeat Password'), validators=[DataRequired(),
                                            EqualTo('password')])
+    manual_schedule = SelectField(_l('Manually Schedule'),
+                                  choices=[('1', 'Yes'), (0, 'No')],
+                                  coerce=int, default=0)
+    work_percent = StringField(_l('Work Percent'), coerce=int, default=100)
+ 
     submit = SubmitField(_l('Register'))
 
     def validate_username(self, username):
