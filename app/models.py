@@ -268,7 +268,8 @@ class Absence(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    username = db.Column(db.String(140))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User')
     status = db.Column(db.String(140))
 
     def __repr__(self):
@@ -279,7 +280,8 @@ class Oncall(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    username = db.Column(db.String(140))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User')
     status = db.Column(db.String(140))
     service = db.Column(db.String(140))
     color = db.Column(db.String(140))

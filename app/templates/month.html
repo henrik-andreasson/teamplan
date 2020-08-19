@@ -2,7 +2,6 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
 
     <nav aria-label="...">
         <ul class="pager">
@@ -27,6 +26,7 @@
     </nav>
 
 
+<!--
     <table class="table table-hover">
       <tr>
         <td>
@@ -84,6 +84,8 @@
       </tr>
 
     </table>
+
+-->
     <table class="table table-hover">
       <tr>
         <td>  {{ _('Week no / Oncall') }} </td>
@@ -262,6 +264,17 @@
       </tr>
       {% endfor %}
     </table>
+
+    {% if form %}
+    <table class="table table-hover">
+      <tr>
+        <td>
+        {{ wtf.quick_form(form) }}
+        <br>
+        </td>
+      </tr>
+    </table>
+    {% endif %}
 
 
     <h2>stats</h2>

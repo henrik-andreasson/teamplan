@@ -8,8 +8,21 @@ from app.models import User, Service
 from datetime import datetime
 
 
+class FilterUserServiceForm(FlaskForm):
+    service = SelectField(_l('Service'), coerce=int)
+    user = SelectField(_l('User'), coerce=int)
+    submit = SubmitField(_l('Filter List'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
+        self.service.choices.insert(0, (-1, _l('All')))
+        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.user.choices.insert(0, (-1, _l('All')))
+
+
 class EditProfileForm(FlaskForm):
-    username = StringField(_l('Username'), validators=[DataRequired()])
+    username = StringField(_l('Username'), validators=[Length(min=2, max=40)])
     about_me = TextAreaField(_l('About me'),
                              validators=[Length(min=0, max=140)])
     submit = SubmitField(_l('Submit'))
@@ -74,7 +87,7 @@ class GenrateMonthWorkForm(FlaskForm):
 
 
 class AbsenceForm(FlaskForm):
-    username = SelectField(_l('Username'))
+    user = SelectField(_l('Username'), coerce=int)
     status = SelectField(_l('Status'), choices=[('requested', 'Requested'),
                                                 ('approved', 'Approved'),
                                                 ('denied', 'Denied')])
@@ -87,9 +100,13 @@ class AbsenceForm(FlaskForm):
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+
 
 class OncallForm(FlaskForm):
-    username = SelectField(_l('Username'))
+    user = SelectField(_l('Username'), coerce=int)
     service = SelectField(_l('service'), validators=[DataRequired()])
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned'),
@@ -103,6 +120,10 @@ class OncallForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
 
 
 class NonWorkingDaysForm(FlaskForm):

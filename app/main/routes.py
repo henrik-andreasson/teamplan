@@ -5,7 +5,8 @@ from flask_babel import _, get_locale
 # from guess_language import guess_language
 from app import db
 from app.main.forms import EditProfileForm, WorkForm, ServiceForm, \
-    AbsenceForm, OncallForm, NonWorkingDaysForm, GenrateMonthWorkForm
+    AbsenceForm, OncallForm, NonWorkingDaysForm, GenrateMonthWorkForm, \
+    FilterUserServiceForm
 from app.models import User, Work, Service, Absence, Oncall, NonWorkingDays
 from app.main import bp
 from calendar import Calendar
@@ -71,7 +72,7 @@ def service_stat_month(month, service=None, user=None, month_info=None):
             stat_user[s.name] = len(work_list)
             user_all_work += stat_user[s.name]
 
-        stat_user['oncall'] = Oncall.query.filter(Oncall.username == u.username,
+        stat_user['oncall'] = Oncall.query.filter(Oncall.user_id == u.id,
                                                   func.datetime(Oncall.start) > date_start,
                                                   func.datetime(Oncall.start) < date_stop
                                                   ).with_entities(func.count()).scalar()
@@ -135,6 +136,14 @@ def index():
     showabsence = request.args.get('absence')
     month = request.args.get('month')
 
+    form = FilterUserServiceForm()
+
+    service_id = None
+    user_id = None
+    if request.method == 'POST' and form.validate_on_submit():
+        service_id = form.service.data
+        user_id = form.user.data
+
     if month is not None:
         selected_month = datetime.strptime(month, "%Y-%m")
         session['selected_month'] = month
@@ -171,19 +180,31 @@ def index():
     elif 'showabsence' in session:
         showabsence = session['showabsence']
 
+    service_obj = None
     if service is not None:
         service_obj = Service.query.filter_by(name=service).first()
-        if service_obj is None:
-            service = None
-        else:
-            print("service: %s id: %s" % (service, service_obj.id))
+    elif service_id is not None:
+        service_obj = Service.query.get(service_id)
 
+    if service_obj is None:
+        service = None
+    else:
+        session['selected_service'] = service_obj.name
+        service = service_obj.name
+        print("service: %s id: %s" % (service, service_obj.id))
+
+    user = None
     if username is not None:
         user = User.query.filter_by(username=username).first()
-        if user is None:
-            username = None
-        else:
-            print("user: %s id: %s" % (username, user.id))
+    elif user_id is not None:
+        user = User.query.get(user_id)
+
+    if user is None:
+        username = None
+    else:
+        session['selected_username'] = user.username
+        username = user.username
+        print("user: %s id: %s" % (username, user.id))
 
     next_month = selected_month + relativedelta.relativedelta(months=1)
     prev_month = selected_month + relativedelta.relativedelta(months=-1)
@@ -233,7 +254,7 @@ def index():
                                                  & (func.datetime(Oncall.stop) < date_max)
                                                  ).order_by(Oncall.start)
 
-                    absence = Absence.query.filter(username == username,
+                    absence = Absence.query.filter(Absence.user_id == user.id,
                                                    func.datetime(Absence.start) > date_min,
                                                    func.datetime(Absence.stop) < date_max
                                                    ).all()
@@ -250,7 +271,7 @@ def index():
                                                  ).order_by(Oncall.start)
 
                     for u in service_obj.users:
-                        absence += Absence.query.filter(username == u.username,
+                        absence += Absence.query.filter(Absence.user_id == u.id,
                                                         func.datetime(Absence.start) > date_min,
                                                         func.datetime(Absence.stop) < date_max
                                                         ).all()
@@ -261,18 +282,17 @@ def index():
                                              func.datetime(Work.stop) < date_max
                                              ).order_by(Work.start)
 
-                    oncall = Oncall.query.filter((Oncall.username == username)
+                    oncall = Oncall.query.filter((Oncall.user_id == user.id)
                                                  & (func.datetime(Oncall.start) > date_min)
                                                  & (func.datetime(Oncall.start) < date_max)
                                                  ).order_by(Oncall.service)
 
-                    absence = Absence.query.filter(username == username,
+                    absence = Absence.query.filter(Absence.user_id == user.id,
                                                    func.datetime(Absence.start) > date_min,
                                                    func.datetime(Absence.stop) < date_max
                                                    ).all()
 
                 else:
-                    services = Service.query.all()
                     work = []
                     for s in services:
                         w = Work.query.filter((Work.service_id == s.id)
@@ -339,7 +359,7 @@ def index():
                            users=users, services=services, stats=stats,
                            month_info=month_info, next_url=next_url,
                            prev_url=prev_url, selected_month=month_str,
-                           oncall=oncall,
+                           oncall=oncall, form=form,
                            absence_color=current_app.config['ABSENCE_COLOR'],
                            nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'],
                            max=month_info['working_hours_in_month'],
@@ -636,12 +656,12 @@ def select_user_for_weighted_work(service, start, stop):
             print("user: {} is already working {} to {} at: {} not assigning any work".format(w.user.username, w.start, w.stop, w.service))
             continue
 
-        absentees = Absence.query.filter(Absence.username == user,
+        absentees = Absence.query.filter(Absence.user_id == user_obj.id,
                                          Absence.start <= start,
                                          Absence.stop >= stop).all()
 
         for a in absentees:
-            print("user: {} is absent during {} to {} not assigning any work".format(a.username, a.start, a.stop))
+            print("user: {} is absent during {} to {} not assigning any work".format(a.user.username, a.start, a.stop))
             continue
 
         print("User: {} has {} h".format(user, stats[user]))
@@ -789,14 +809,15 @@ def work_edit():
         work.status = form.status.data
 
         if work.status == "unassigned":
-            work.username = None
+            work.user_id = None
+            work.user = None
 
         db.session.commit()
         flash(_('Your changes have been saved.'))
 
         if current_app.config['ROCKET_ENABLED']:
             string_to = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                               work.service, work.username)
+                                               work.service, work.user.username)
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
                                 server_url=current_app.config['ROCKET_URL'])
@@ -823,9 +844,10 @@ def work_list():
     username = request.args.get('username')
     servicename = request.args.get('service')
     s = Service.query.filter_by(name=servicename).first()
+    u = User.query.filter_by(User.username == username).first()
 
-    if username is not None:
-        work = Work.query.filter_by(username=username).paginate(
+    if u is not None:
+        work = Work.query.filter_by(Work.user_id == u.id).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
     elif s is not None:
         work = Work.query.filter_by(service_id=s.id).paginate(
@@ -883,9 +905,6 @@ def absence_add():
     form = AbsenceForm()
     page = request.args.get('page', 1, type=int)
 
-    form.username.choices = [(u.username, u.username)
-                             for u in User.query.all()]
-
     absence = Absence.query.order_by(Absence.start).paginate(
               page, current_app.config['POSTS_PER_PAGE'], False)
 
@@ -897,7 +916,7 @@ def absence_add():
     if request.method == 'POST' and form.validate_on_submit():
         absence = Absence(start=form.start.data,
                           stop=form.stop.data,
-                          username=form.username.data,
+                          user_id=form.user.data,
                           status=form.status.data)
         db.session.add(absence)
         db.session.commit()
@@ -937,16 +956,18 @@ def absence_edit():
         render_template('service.html', title=_('absence is not defined'))
 
     form = AbsenceForm(formdata=request.form, obj=absence)
-    form.username.choices = [(u.username, u.username)
-                             for u in User.query.all()]
 
     if request.method == 'POST' and form.validate_on_submit():
         rocket_msg_from = 'edit of absence from: \n%s\t%s\t%s\t@%s' % (absence.start,
                                                                        absence.stop,
                                                                        absence.status,
-                                                                       absence.username)
+                                                                       absence.user.username)
 
-        form.populate_obj(absence)
+        absence.start = form.start.data
+        absence.stop = form.stop.data
+        absence.user_id = form.user.data
+        absence.status = form.status.data
+
         db.session.commit()
         flash(_('Your changes have been saved.'))
         if current_app.config['ROCKET_ENABLED']:
@@ -956,7 +977,7 @@ def absence_edit():
             rocket_msg_to = 'to: \n%s\t%s\t%s\t@%s ' % (absence.start,
                                                         absence.stop,
                                                         absence.status,
-                                                        absence.username)
+                                                        absence.user.username)
             rocket.chat_post_message("%s\n%s\n\nby: %s" % (rocket_msg_from,
                                                            rocket_msg_to,
                                                            current_user.username),
@@ -966,6 +987,7 @@ def absence_edit():
         return redirect(url_for('main.index'))
 
     else:
+
         return render_template('index.html', title=_('Edit absence'),
                                form=form)
 
@@ -977,9 +999,13 @@ def absence_list():
     page = request.args.get('page', 1, type=int)
     username = request.args.get('username')
 
-    if username is not None:
-        absence = Absence.query.filter_by(username=username).paginate(
+    u = User.query.filter_by(User.username == username).first()
+
+    if u is not None:
+
+        absence = Absence.query.filter_by(Absence.user_id == u.id).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
+
     else:
         absence = Absence.query.order_by(Absence.start).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)

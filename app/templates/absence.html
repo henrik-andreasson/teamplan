@@ -2,7 +2,7 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    
+
     {% if allabsence %}
         <nav aria-label="...">
             <ul class="pager">
@@ -47,7 +47,7 @@
       {% endset %}
 
         <tr>
-            <td>  {{ absence.username }}  </td>
+            <td>  {{ absence.user.username }}  </td>
             <td>  {{ absence.status }}  </td>
             <td>  {{ absence_start }} </td>
             <td>  {{ absence_stop }} </td>
