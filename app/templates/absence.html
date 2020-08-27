@@ -3,6 +3,12 @@
 
 {% block app_content %}
 
+{% if order == "desc" %}
+  {% set order %}asc{% endset %}
+{% else %}
+  {% set order %}desc{% endset %}
+{% endif %}
+
     {% if allabsence %}
         <nav aria-label="...">
             <ul class="pager">
@@ -18,15 +24,14 @@
                 </li>
             </ul>
         </nav>
-    {% endif %}
 
     <table class="table table-hover">
       <tr>
-          <td>  {{ _('User') }} </td>
-          <td>  {{ _('Status') }}  </td>
-          <td>  {{ _('Start') }} </td>
-          <td>  {{ _('Stop') }} </td>
-          <td>  {{ _('Edit') }} </td>
+          <td><A HREF="{{url_for('main.absence_list', sort='user_id',      order=order)}}">   {{ _('User') }}   </A></td>
+          <td><A HREF="{{url_for('main.absence_list', sort='status',       order=order)}}">   {{ _('Status') }} </A></td>
+          <td><A HREF="{{url_for('main.absence_list', sort='start',        order=order)}}">   {{ _('Start') }}  </A></td>
+          <td><A HREF="{{url_for('main.absence_list', sort='stop',         order=order)}}">   {{ _('Stop') }}   </A></td>
+          <td><A HREF="{{url_for('main.absence_list', sort='id',           order=order)}}">   {{ _('Edit') }}   </A></td>
       </tr>
 
 
@@ -36,14 +41,6 @@
           <a href="{{ url_for('main.absence_edit', absence=absence.id) }}">
               {{ absence.id }}
           </a>
-      {% endset %}
-
-      {% set absence_start %}
-              {{ absence.start.strftime("%Y-%m-%d %H:%M") }}
-      {% endset %}
-
-      {% set absence_stop %}
-              {{ absence.stop.strftime("%Y-%m-%d %H:%M") }}
       {% endset %}
 
         <tr>
@@ -56,7 +53,6 @@
         {% endfor %}
     </table>
 
-    {% if allabsence %}
         <nav aria-label="...">
             <ul class="pager">
                 <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -73,7 +69,7 @@
         </nav>
     {% endif %}
 
-
+ 
     <hr>
     {% if form %}
     {{ wtf.quick_form(form) }}

@@ -140,7 +140,7 @@
                 {% endif %}
 
                   <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" style="background: {{oc.color}}" class="list-group-item">
-                    <div class="text-nowrap"><h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.username, service=oc.service) }}</h4></div>
+                    <div class="text-nowrap"><h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.user.username, service=oc.service.name) }}</h4></div>
                     <div class="text-nowrap"><p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }} {{ help_wanted }}</p></div>
                   </a>
 
@@ -239,15 +239,19 @@
                   {% endset %}
 
                   {% if ab.status == "requested" %}
-                      {% set help_wanted %} ? {% endset %}
+                      {% set help_wanted %}
+                      <img src="/static/help.png" alt="?"/>
+                      {% endset %}
                   {% endif %}
 
                   {% if ab.status == "denied" %}
-                      {% set help_wanted %} - {% endset %}
+                      {% set help_wanted %}
+                      <img src="/static/warn.png" alt="!"/>
+                      {% endset %}
                   {% endif %}
 
                   <a href="{{ url_for('main.absence_edit', absence=ab.id) }}" class="list-group-item" style="background: {{absence_color}}">
-                    <div class="text-nowrap"><h4 class="text-nowrap" id="text-nowrap">{{ _('%(name)s@off', name=ab.username) }}</h4></div>
+                    <div class="text-nowrap"><h4 class="text-nowrap" id="text-nowrap">{{ _('%(name)s@off', name=ab.user.username) }}</h4></div>
                     <div class="text-nowrap"><p class="list-group-item-text  id="text-nowrap"">{{ _('%(start)s - %(stop)s', start=ab_start, stop=ab_stop) }} {{help_wanted}}</p></div>
                   </a>
 

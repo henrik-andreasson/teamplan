@@ -283,7 +283,8 @@ class Oncall(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User')
     status = db.Column(db.String(140))
-    service = db.Column(db.String(140))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
+    service = db.relationship('Service')
     color = db.Column(db.String(140))
 
     def __repr__(self):

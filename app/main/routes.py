@@ -15,6 +15,7 @@ from sqlalchemy import func
 from dateutil import relativedelta
 from rocketchat_API.rocketchat import RocketChat
 import calendar
+from sqlalchemy import desc, asc
 
 
 @bp.before_app_request
@@ -131,8 +132,6 @@ def index():
 
     users = User.query.order_by(User.username)
     services = Service.query.order_by(Service.name)
-    username = request.args.get('username')
-    service = request.args.get('service')
     showabsence = request.args.get('absence')
     month = request.args.get('month')
 
@@ -140,9 +139,6 @@ def index():
 
     service_id = None
     user_id = None
-    if request.method == 'POST' and form.validate_on_submit():
-        service_id = form.service.data
-        user_id = form.user.data
 
     if month is not None:
         selected_month = datetime.strptime(month, "%Y-%m")
@@ -153,56 +149,37 @@ def index():
     else:
         selected_month = datetime.utcnow()
 
-    if username is not None:
-        if 'selected_user' in session:
-            session.pop('selected_user', None)
-            username = None
-        else:
-            session['selected_user'] = username
-    elif 'selected_user' in session:
-        username = session['selected_user']
-
-    if service is not None:
-        if 'selected_service' in session:
-            session.pop('selected_service', None)
-            service = None
-        else:
-            session['selected_service'] = service
-    elif 'selected_service' in session:
-        service = session['selected_service']
-
-    if showabsence is not None:
-        if 'showabsence' in session:
-            session.pop('showabsence', None)
-            showabsence = None
-        else:
+    showabsence = None
+    if request.method == 'POST' and form.validate_on_submit():
+        service_id = form.service.data
+        user_id = form.user.data
+        if form.showabsence.data is True:
+            showabsence = "show"
             session['showabsence'] = "show"
-    elif 'showabsence' in session:
+        else:
+            showabsence = None
+            session['showabsence'] = None
+
+    if 'showabsence' in session:
         showabsence = session['showabsence']
 
     service_obj = None
-    if service is not None:
-        service_obj = Service.query.filter_by(name=service).first()
-    elif service_id is not None:
+    if service_id is not None:
         service_obj = Service.query.get(service_id)
 
     if service_obj is None:
         service = None
     else:
-        session['selected_service'] = service_obj.name
         service = service_obj.name
         print("service: %s id: %s" % (service, service_obj.id))
 
     user = None
-    if username is not None:
-        user = User.query.filter_by(username=username).first()
-    elif user_id is not None:
+    if user_id is not None:
         user = User.query.get(user_id)
 
     if user is None:
         username = None
     else:
-        session['selected_username'] = user.username
         username = user.username
         print("user: %s id: %s" % (username, user.id))
 
@@ -249,7 +226,7 @@ def index():
                                              & (func.datetime(Work.stop) < date_max)
                                              ).order_by(Work.start)
 
-                    oncall = Oncall.query.filter((Oncall.service == service)
+                    oncall = Oncall.query.filter((Oncall.service_id == service_obj.id)
                                                  & (func.datetime(Oncall.start) > date_min)
                                                  & (func.datetime(Oncall.stop) < date_max)
                                                  ).order_by(Oncall.start)
@@ -265,7 +242,7 @@ def index():
                                              & (func.datetime(Work.stop) < date_max)
                                              ).order_by(Work.start)
 
-                    oncall = Oncall.query.filter((Oncall.service == service)
+                    oncall = Oncall.query.filter((Oncall.service_id == service_obj.id)
                                                  & (func.datetime(Oncall.start) > date_min)
                                                  & (func.datetime(Oncall.stop) < date_max)
                                                  ).order_by(Oncall.start)
@@ -285,7 +262,7 @@ def index():
                     oncall = Oncall.query.filter((Oncall.user_id == user.id)
                                                  & (func.datetime(Oncall.start) > date_min)
                                                  & (func.datetime(Oncall.start) < date_max)
-                                                 ).order_by(Oncall.service)
+                                                 ).order_by(Oncall.start)
 
                     absence = Absence.query.filter(Absence.user_id == user.id,
                                                    func.datetime(Absence.start) > date_min,
@@ -302,7 +279,7 @@ def index():
                         work += w
                     oncall = Oncall.query.filter((func.datetime(Oncall.start) > date_min)
                                                  & (func.datetime(Oncall.start) < date_max)
-                                                 ).order_by(Oncall.service)
+                                                 ).order_by(Oncall.start)
 
                     absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
                                                    func.datetime(Absence.stop) < date_max
@@ -657,7 +634,7 @@ def select_user_for_weighted_work(service, start, stop):
             continue
 
         absentees = Absence.query.filter(Absence.user_id == user_obj.id,
-                                         Absence.start <= start,
+                                         Absence.start <= stop,
                                          Absence.stop >= stop).all()
 
         for a in absentees:
@@ -841,24 +818,45 @@ def work_edit():
 def work_list():
 
     page = request.args.get('page', 1, type=int)
+    sort = request.args.get('sort', 'start')
+    order = request.args.get('order', 'asc')
     username = request.args.get('username')
-    servicename = request.args.get('service')
-    s = Service.query.filter_by(name=servicename).first()
-    u = User.query.filter_by(User.username == username).first()
 
-    if u is not None:
-        work = Work.query.filter_by(Work.user_id == u.id).paginate(
+    work_vars = list(vars(Work).keys())
+    work_vars.append('username')
+    work_vars.append('service')
+
+    if sort not in work_vars:
+        flash(_('No such varibale to sort by %s' % sort))
+        return redirect(url_for('main.index'))
+
+    if order not in ['asc', 'desc']:
+        flash(_('Bad order to sort by'))
+        return redirect(url_for('main.index'))
+
+    if sort == 'username':
+        sortstr = "{}(Work.{})".format(order, 'user_id')
+        work = Work.query.order_by(eval(sortstr)).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
-    elif s is not None:
-        work = Work.query.filter_by(service_id=s.id).paginate(
+
+    elif sort == 'service':
+        sortstr = "{}(Work.{})".format(order, 'service_id')
+        work = Work.query.order_by(eval(sortstr)).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
+
+    elif username is not None:
+        u = User.query.filter(User.username == username).first_or_404()
+        work = Work.query.filter(Work.user_id == u.id ).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+
     else:
-        work = Work.query.order_by(Work.start).paginate(
+        sortstr = "{}(Work.{})".format(order, sort)
+        work = Work.query.order_by(eval(sortstr)).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
-    next_url = url_for('main.work_list', page=work.next_num) \
+    next_url = url_for('main.work_list', page=work.next_num, sort=sort, order=order) \
         if work.has_next else None
-    prev_url = url_for('main.work_list', page=work.prev_num) \
+    prev_url = url_for('main.work_list', page=work.prev_num, sort=sort, order=order) \
         if work.has_prev else None
 
     return render_template('work.html', title=_('Work'),
@@ -903,15 +901,8 @@ def absence_add():
         return redirect(request.referrer)
 
     form = AbsenceForm()
-    page = request.args.get('page', 1, type=int)
 
-    absence = Absence.query.order_by(Absence.start).paginate(
-              page, current_app.config['POSTS_PER_PAGE'], False)
-
-    next_url = url_for('main.absence_list', page=absence.next_num) \
-        if absence.has_next else None
-    prev_url = url_for('main.absence_list', page=absence.prev_num) \
-        if absence.has_prev else None
+    absence = Absence.query.order_by(Absence.start)
 
     if request.method == 'POST' and form.validate_on_submit():
         absence = Absence(start=form.start.data,
@@ -935,8 +926,7 @@ def absence_add():
         return redirect(url_for('main.index'))
     else:
         return render_template('absence.html', title=_('Add absence'),
-                               allabsence=absence.items, form=form,
-                               next_url=next_url, prev_url=prev_url)
+                               form=form)
 
 
 @bp.route('/absence/edit/', methods=['GET', 'POST'])
@@ -987,6 +977,7 @@ def absence_edit():
         return redirect(url_for('main.index'))
 
     else:
+        form.user.data = absence.user_id
 
         return render_template('index.html', title=_('Edit absence'),
                                form=form)
@@ -999,7 +990,7 @@ def absence_list():
     page = request.args.get('page', 1, type=int)
     username = request.args.get('username')
 
-    u = User.query.filter_by(User.username == username).first()
+    u = User.query.filter(User.username == username).first()
 
     if u is not None:
 
@@ -1031,7 +1022,7 @@ def absence_delete():
         flash(_('Absence was not deleted, id not found!'))
         return redirect(url_for('main.index'))
 
-    deleted_msg = 'Absence deleted: %s\t%s\t%s\n' % (absence.start, absence.stop, absence.username)
+    deleted_msg = 'Absence deleted: %s\t%s\t%s\n' % (absence.start, absence.stop, absence.user.username)
     if current_app.config['ROCKET_ENABLED']:
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
@@ -1054,19 +1045,29 @@ def oncall_add():
     if 'cancel' in request.form:
         return redirect(request.referrer)
 
-    form.username.choices = [(u.username, u.username)
-                             for u in User.query.all()]
-
-    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
-
     if request.method == 'POST' and form.validate_on_submit():
-        service = Service.query.filter_by(name=form.service.data).first()
+        service = Service.query.get(form.service.data)
+        if service is None:
+            flash(_('service not found'))
+            return redirect(request.referrer)
+
         oncall = Oncall(start=form.start.data,
                         stop=form.stop.data,
-                        username=form.username.data,
-                        service=form.service.data,
+                        user_id=form.user.data,
+                        service_id=form.service.data,
                         color=service.color,
                         status=form.status.data)
+
+        if form.absenceday.data != 0:
+
+            dt_absence_start = form.start.data + timedelta(days=-form.start.data.weekday() + form.absenceday.data - 1, weeks=1, hours=-form.start.data.hour + 8)
+            dt_absence_stop = form.start.data + timedelta(days=-form.start.data.weekday() + form.absenceday.data - 1, weeks=1, hours=-form.start.data.hour + 17)
+
+            absence = Absence(start=dt_absence_start,
+                              stop=dt_absence_stop,
+                              user_id=form.user.data)
+            db.session.add(absence)
+
         db.session.add(oncall)
         db.session.commit()
         flash(_('New oncall is now posted!'))
@@ -1074,7 +1075,7 @@ def oncall_add():
         new_oncall_mess = 'new oncall: %s\t%s\t%s\t@%s\nby %s\n ' % (oncall.start,
                                                                      oncall.stop,
                                                                      oncall.service,
-                                                                     oncall.username,
+                                                                     oncall.user.username,
                                                                      current_user.username)
         if current_app.config['ROCKET_ENABLED']:
             rocket = RocketChat(current_app.config['ROCKET_USER'],
@@ -1115,20 +1116,30 @@ def oncall_edit():
         return redirect(url_for('main.oncall_delete', oncall=oncallid))
 
     form = OncallForm(formdata=request.form, obj=oncall)
-    form.username.choices = [(u.username, u.username)
-                             for u in User.query.all()]
-    form.service.choices = [(s.name, s.name) for s in Service.query.all()]
-
     if request.method == 'POST' and form.validate_on_submit():
         string_from = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
-                                             oncall.service, oncall.username)
-        form.populate_obj(oncall)
+                                             oncall.service, oncall.user.username)
+        oncall.start = form.start.data
+        oncall.stop = form.stop.data
+        oncall.user_id = form.user.data
+        oncall.service_id = form.service.data
         db.session.commit()
+
+        if form.absenceday.data != 0:
+            #TODO: add link to absence from oncall and update via that, this creates a duplicate off day ...
+            dt_absence_start = form.start.data + timedelta(days=-form.start.data.weekday() + form.absenceday.data - 1, weeks=1, hours=-form.start.data.hour + 8)
+            dt_absence_stop = form.start.data + timedelta(days=-form.start.data.weekday() + form.absenceday.data - 1, weeks=1, hours=-form.start.data.hour + 17)
+
+            absence = Absence(start=dt_absence_start,
+                              stop=dt_absence_stop,
+                              user_id=form.user.data)
+            db.session.add(absence)
+
         flash(_('Your changes have been saved.'))
 
         if current_app.config['ROCKET_ENABLED']:
             string_to = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
-                                               oncall.service, oncall.username)
+                                               oncall.service, oncall.user.username)
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
                                 server_url=current_app.config['ROCKET_URL'])
@@ -1140,6 +1151,8 @@ def oncall_edit():
         return redirect(url_for('main.index'))
 
     else:
+        form.user.data = oncall.user_id
+        form.service.data = oncall.service_id
         return render_template('index.html', title=_('Edit oncall'),
                                form=form)
 
@@ -1186,7 +1199,7 @@ def oncall_delete():
     deleted_msg = 'oncall deleted: %s\t%s\t%s @%s\n' % (oncall.start,
                                                         oncall.stop,
                                                         oncall.service,
-                                                        oncall.username)
+                                                        oncall.user.username)
     if current_app.config['ROCKET_ENABLED']:
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
@@ -1208,7 +1221,6 @@ def nonworkingdays_add():
     if 'cancel' in request.form:
         return redirect(request.referrer)
     form = NonWorkingDaysForm()
-    page = request.args.get('page', 1, type=int)
 
     if request.method == 'POST' and form.validate_on_submit():
         nonworkingdays = NonWorkingDays(start=form.start.data,
@@ -1229,14 +1241,11 @@ def nonworkingdays_add():
                                      channel=current_app.config['ROCKET_CHANNEL']
                                      ).json()
 
-        return redirect(url_for('main.index'))
+        return redirect(url_for('main.nonworkingdays_list'))
     else:
 
-        nonworkingdays = NonWorkingDays.query.order_by(NonWorkingDays.start).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
-
         return render_template('nonworkingdays.html', title=_('Add nonworkingdays'),
-                               allnwd=nonworkingdays.items, form=form)
+                               form=form)
 
 
 @bp.route('/nonworkingdays/edit/', methods=['GET', 'POST'])
@@ -1278,7 +1287,7 @@ def nonworkingdays_edit():
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
 
-        return redirect(url_for('main.index'))
+        return redirect(url_for('main.nonworkingdays_list'))
 
     else:
         return render_template('index.html', title=_('Edit nonworkingdays'),
