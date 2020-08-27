@@ -53,15 +53,22 @@ def ical():
 
     print("search range: %s->%s" % (date_min, date_max))
 
+    u = None
+    if username is not None:
+        u = User.query.filter_by(username=username).first()
+
+    s = None
     if service is not None:
         s = Service.query.filter_by(name=service).first()
+
+    if s is not None:
         work = Work.query.filter(Work.service_id == s.name,
                                  func.datetime(Work.start) > date_min,
                                  func.datetime(Work.start) < date_max
                                  ).order_by(Work.service_id)
 
         oncall = Oncall.query.filter(
-         (Oncall.service == service)
+         (Oncall.service == s.name)
          & (func.datetime(Oncall.start) > date_min)
          & (func.datetime(Oncall.start) < date_max)
          ).order_by(Oncall.service)
@@ -70,18 +77,18 @@ def ical():
                                        func.datetime(Absence.stop) < date_max
                                        ).all()
 
-    elif username is not None:
-        work = Work.query.filter((Work.username == username ) &
-                                 (func.datetime(Work.start) > date_min) &
-                                 (func.datetime(Work.start) < date_max)
+    elif u is not None:
+        work = Work.query.filter((Work.user_id == u.id)
+                                 & (func.datetime(Work.start) > date_min)
+                                 & (func.datetime(Work.start) < date_max)
                                  ).order_by(Work.service_id)
 
-        oncall = Oncall.query.filter((Oncall.username == username) &
+        oncall = Oncall.query.filter((Oncall.user_id == u.id) &
                                      (func.datetime(Oncall.start) > date_min ) &
                                      (func.datetime(Oncall.start) < date_max )
                                      ).order_by(Oncall.service)
 
-        absence = Absence.query.filter((Absence.username == username) &
+        absence = Absence.query.filter((Absence.user_id == u.id) &
                                        (func.datetime(Absence.start) > date_min) &
                                        (func.datetime(Absence.stop) < date_max)
                                        ).all()
@@ -109,9 +116,9 @@ def ical():
     utc = pytz.utc
 
     for w in work:
-        user = User.query.filter_by(username=w.username).first()
+        user = User.query.get(w.user.id)
         event = Event()
-        event.add('summary', "%s@%s" % (w.username, w.service.name))
+        event.add('summary', "%s@%s" % (w.user.username, w.service.name))
 
         event.add('dtstart', local_tz.localize(w.start).astimezone(utc))
         event.add('dtend', local_tz.localize(w.stop).astimezone(utc))
@@ -121,7 +128,7 @@ def ical():
         event['organizer'] = organizer
 
         attendee = vCalAddress('MAILTO:%s' % user.email)
-        attendee.params['cn'] = vText(w.username)
+        attendee.params['cn'] = vText(w.user.username)
         attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
         event.add('attendee', attendee, encode=0)
 
@@ -160,9 +167,9 @@ def ical():
 
     for ab in absence:
         event = Event()
-        user = User.query.filter(User.username == ab.username).first()
+        user = User.query.filter(User.username == ab.user.username).first()
 
-        event.add('summary', "absence: %s" % (ab.username))
+        event.add('summary', "absence: %s" % (ab.user.username))
         event.add('dtstart', local_tz.localize(ab.start).astimezone(utc))
         event.add('dtend', local_tz.localize(ab.stop).astimezone(utc))
         event.add('uid', str(uuid.uuid4()) + current_app.config['ICAL_UID_DOMAIN'])
@@ -171,7 +178,7 @@ def ical():
         event['organizer'] = organizer
 
         attendee = vCalAddress('MAILTO:%s' % user.email)
-        attendee.params['cn'] = vText(ab.username)
+        attendee.params['cn'] = vText(ab.user.username)
         attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
         event.add('attendee', attendee, encode=0)
 

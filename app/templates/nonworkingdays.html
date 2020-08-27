@@ -3,8 +3,14 @@
 
 {% block app_content %}
 
+{% if order == "desc" %}
+  {% set order %}asc{% endset %}
+{% else %}
+  {% set order %}desc{% endset %}
+{% endif %}
 
-    {% if allnwd %}
+
+{% if allnwd %}
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -19,15 +25,14 @@
             </li>
         </ul>
     </nav>
-    {% endif %}
 
 
     <table class="table table-hover">
       <tr>
-        <td>  {{ _('Name') }} </td>
-        <td>  {{ _('Start') }} </td>
-        <td>  {{ _('Stop') }} </td>
-        <td>  {{ _('Edit') }} </td>
+        <td><A HREF="{{url_for('main.nonworkingdays_list', sort='name',  order=order)}}">   {{ _('Name') }}  </A></td>
+        <td><A HREF="{{url_for('main.nonworkingdays_list', sort='start', order=order)}}">   {{ _('Start') }} </A></td>
+        <td><A HREF="{{url_for('main.nonworkingdays_list', sort='stop',  order=order)}}">   {{ _('Stop') }}  </A></td>
+        <td><A HREF="{{url_for('main.nonworkingdays_list', sort='id',    order=order)}}">   {{ _('Edit') }}  </A></td>
       </tr>
 
 
@@ -45,7 +50,7 @@
         </tr>
         {% endfor %}
     </table>
-    {% if allnwd %}
+
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -60,7 +65,8 @@
             </li>
         </ul>
     </nav>
-    {% endif %}
+{% endif %}
+
     <hr>
     {% if form %}
     {{ wtf.quick_form(form) }}

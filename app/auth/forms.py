@@ -22,8 +22,8 @@ class RegistrationForm(FlaskForm):
     manual_schedule = SelectField(_l('Manually Schedule'),
                                   choices=[('1', 'Yes'), (0, 'No')],
                                   coerce=int, default=0)
-    work_percent = StringField(_l('Work Percent'), coerce=int, default=100)
- 
+    work_percent = StringField(_l('Work Percent'), default=100)
+
     submit = SubmitField(_l('Register'))
 
     def validate_username(self, username):

@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, \
-    SelectMultipleField
+    SelectMultipleField, BooleanField
 from wtforms.fields.html5 import DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
@@ -11,6 +11,7 @@ from datetime import datetime
 class FilterUserServiceForm(FlaskForm):
     service = SelectField(_l('Service'), coerce=int)
     user = SelectField(_l('User'), coerce=int)
+    showabsence = BooleanField(_l('Show Absence'))
     submit = SubmitField(_l('Filter List'))
 
     def __init__(self, *args, **kwargs):
@@ -42,11 +43,11 @@ class EditProfileForm(FlaskForm):
 class ServiceForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()])
     color = StringField(_l('color'), validators=[DataRequired()])
+    users = SelectMultipleField(_l('Users'), coerce=int, render_kw={"size": 20})
+    manager = SelectField(_l('Manager'), validators=[DataRequired()], coerce=int)
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
-    users = SelectMultipleField(_l('Users'), coerce=int, render_kw={"size": 20})
-    manager = SelectField(_l('Manager'), validators=[DataRequired()], coerce=int)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -117,6 +118,14 @@ class OncallForm(FlaskForm):
     stop = DateTimeField(_l('Stop Oncall'),
                          validators=[DataRequired()], format='%Y-%m-%d %H:%M',
                          default=datetime.now())
+    absenceday = SelectField(_l('Add absence day'),
+                             choices=[(0, _l('None')),
+                                      (1, _l('Monday')),
+                                      (2, _l('Tuseday')),
+                                      (3, _l('Wednesday')),
+                                      (4, _l('Thursday')),
+                                      (5, _l('Friday'))],
+                             default=5, coerce=int)
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
@@ -124,6 +133,7 @@ class OncallForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
 
 
 class NonWorkingDaysForm(FlaskForm):
