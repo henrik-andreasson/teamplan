@@ -877,7 +877,7 @@ def work_delete():
 
     deleted_msg = 'Work deleted: %s\t%s\t%s\t@%s\n' % (work.start, work.stop,
                                                        work.service.name,
-                                                       work.username)
+                                                       work.user.username)
     if current_app.config['ROCKET_ENABLED']:
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
@@ -919,7 +919,7 @@ def absence_add():
                                 server_url=current_app.config['ROCKET_URL'])
             rocket.chat_post_message('new absence: %s\t%s\t%s\t@%s ' % (
                                  absence.start, absence.stop, absence.status,
-                                 absence.username),
+                                 absence.user.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
 

@@ -53,7 +53,7 @@ def create_work():
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
         chatmsg = 'new work: %s\t%s\t%s\t@%s ' % (work.start, work.stop,
-                                                  work.service, work.username)
+                                                  work.service, work.user.username)
         rocket.chat_post_message(chatmsg,
                                  channel=current_app.config['ROCKET_CHANNEL']).json()
 
