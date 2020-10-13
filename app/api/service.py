@@ -114,10 +114,10 @@ def user_list(id=None, name=None):
 
     if name is not None:
         service = Service.query.filter(Service.name == name).first_or_404()
-    elif service is not None:
+    elif id is not None:
         service = Service.query.get(id)
     else:
-        return bad_request('must include service-name or id in URL')
+        return bad_request('must include user-name or id in URL')
 
     if service is None:
         return bad_request('Error retriving the service')
