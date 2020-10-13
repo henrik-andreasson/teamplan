@@ -377,7 +377,7 @@ def explore():
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    print("user: %s services: %s" % (user.username, user.services))
+    services = Service.query.order_by(Service.name)
 
     page = request.args.get('page', 1, type=int)
     users_work = Work.query.filter(Work.user_id == user.id).paginate(
@@ -385,7 +385,7 @@ def user(username):
     next_url = url_for('main.user', username=user.username, page=users_work.next_num) if users_work.has_next else None
     prev_url = url_for('main.user', username=user.username, page=users_work.prev_num) if users_work.has_prev else None
     return render_template('user.html', user=user, allwork=users_work.items,
-                           next_url=next_url, prev_url=prev_url)
+                           services=services, next_url=next_url, prev_url=prev_url)
 
 
 @bp.route('/user/list')
@@ -882,7 +882,7 @@ def work_delete():
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('work deleted: \n%s\nto:\n%s\nby: %s' % (
+        rocket.chat_post_message('work deleted: \n%s\n by: %s' % (
                              deleted_msg, current_user.username),
                              channel=current_app.config['ROCKET_CHANNEL']
                              ).json()
@@ -1027,7 +1027,7 @@ def absence_delete():
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('absence deleted: \n%s\nto:\n%s\nby: %s' % (
+        rocket.chat_post_message('absence deleted: \n%s\n by: %s' % (
                              deleted_msg, current_user.username),
                              channel=current_app.config['ROCKET_CHANNEL']
                              ).json()
@@ -1204,7 +1204,7 @@ def oncall_delete():
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('oncall deleted: \n%s\nto:\n%s\nby: %s' % (
+        rocket.chat_post_message('oncall deleted: \n%s\nby: %s' % (
                              deleted_msg, current_user.username),
                              channel=current_app.config['ROCKET_CHANNEL']
                              ).json()
@@ -1331,7 +1331,7 @@ def nonworkingday_delete():
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
                             server_url=current_app.config['ROCKET_URL'])
-        rocket.chat_post_message('nonworkingday deleted: \n%s\nto:\n%s\nby: %s' % (
+        rocket.chat_post_message('nonworkingday deleted: \n%s\n by: %s' % (
                              deleted_msg, current_user.username),
                              channel=current_app.config['ROCKET_CHANNEL']
                              ).json()

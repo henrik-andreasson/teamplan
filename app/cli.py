@@ -42,7 +42,7 @@ def register(app):
 
         for w in work:
             msg = 'about to work: %s\t%s\t%s\t@%s ' % (w.start, w.stop,
-                                                       w.service, w.username)
+                                                       w.service, w.user.username)
             pprint(rocket.chat_post_message(msg, channel=current_app.
                                             config['ROCKET_CHANNEL']).json())
             time.sleep(1)
