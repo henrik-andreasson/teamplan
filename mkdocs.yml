@@ -1,0 +1,27 @@
+site_name: Teamplan
+nav:
+    - Home: index.md
+    - Demo: demo.md
+    - Running: running.md
+    - Getting Started: getting-started.md
+    - Modules: modules.md
+    - REST API: rest-api.md
+
+theme: material
+repo_url: https://github.com/henrik-andreasson/teamplan
+repo_name: Teamplan
+copyright: "&copy 2020 Henrik Andreasson"
+markdown_extensions:
+    - admonition
+    - smarty
+    - abbr
+    - attr_list
+    - fenced_code
+    - footnotes
+    - tables
+    - codehilite
+    - meta
+    - toc:
+        title: title
+        permalink: True
+    - sane_lists
