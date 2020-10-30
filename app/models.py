@@ -50,13 +50,13 @@ class PaginatedAPIMixin(object):
 
 class Service(PaginatedAPIMixin, db.Model):
     __tablename__ = "service"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(140))
     updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     color = db.Column(db.String(140))
     users = db.relationship('User', secondary=service_user)
     manager = db.relationship('User', foreign_keys='Service.manager_id')
-    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     work = db.relationship("Work")
 
@@ -86,7 +86,7 @@ class Service(PaginatedAPIMixin, db.Model):
 
 class User(PaginatedAPIMixin, UserMixin, db.Model):
     __tablename__ = "user"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
@@ -199,7 +199,7 @@ def load_user(id):
 
 class Work(PaginatedAPIMixin, db.Model):
     __tablename__ = "work"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -263,7 +263,7 @@ class Work(PaginatedAPIMixin, db.Model):
 
 
 class Absence(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -290,7 +290,7 @@ class Oncall(db.Model):
 
 
 class NonWorkingDays(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(140))
     start = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     stop = db.Column(db.DateTime, index=True, default=datetime.utcnow)

@@ -159,11 +159,19 @@
               <div class="list-group dropdown">
                 {% if day['display_day']  %}
                   {% if day['display_day'] == month_info['today_day'] and month_info['selected_month'] == month_info['today_year_month'] %}
-                    <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item active">
+                    {% set active %}active{% endset %}
+                  {% endif %}
+
+                  {% if month_info['date_link_to'] == "Work" %}
+                      <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{active}}">
+                        {{ day['display_day'] }}
+                      </a>
+                  {% elif month_info['date_link_to'] == "Non Working Day" %}
+                    <a href="{{ url_for('main.nwd_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{active}}">
                       {{ day['display_day'] }}
                     </a>
                   {% else %}
-                    <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item">
+                    <a href="{{ url_for('main.absence_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{active}}">
                       {{ day['display_day'] }}
                     </a>
                   {% endif %}
@@ -232,10 +240,10 @@
                 {% for ab in day['absence'] %}
 
                   {% set ab_start %}
-                    {{ ab.start.strftime("(%H:%M)") }}
+                    {{ ab.start.strftime("(%m-%d %H:%M)") }}
                     {% endset %}
                     {% set ab_stop %}
-                    {{ ab.stop.strftime("(%H:%M)") }}
+                    {{ ab.stop.strftime("(%m-%d %H:%M)") }}
                   {% endset %}
 
                   {% if ab.status == "requested" %}
@@ -258,8 +266,6 @@
               {% endfor %}
 
             {% endif %}
-
-
             </div>
 
             </td>
@@ -268,6 +274,7 @@
       </tr>
       {% endfor %}
     </table>
+
 
     {% if form %}
     <table class="table table-hover">
@@ -337,13 +344,6 @@
 
     <canvas id="chart" width="800" height="700"></canvas>
 
-<hr>
-
-debug:  <br>
-
-selected_month: {{ month_info['selected_month'] }} <br>
-selected_service: {{ month_info['selected_service'] }} <br>
-selected_user: {{ month_info['selected_user'] }} <br>
 
 {% endblock %}
 

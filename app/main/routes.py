@@ -52,6 +52,8 @@ def service_stat_month(month, service=None, user=None, month_info=None):
 
     date_start = "%s-%s-01 00:00:00" % (start_year, start_month)
     date_stop = "%s-%s-01 00:00:00" % (stop_year, stop_month)
+    dt_start = datetime.strptime(date_start, "%Y-%m-%d %H:%M:%S")
+    dt_stop = datetime.strptime(date_stop, "%Y-%m-%d %H:%M:%S")
     stats = []
     for u in users:
         print("statuser: checking user: {}".format(u))
@@ -61,10 +63,10 @@ def service_stat_month(month, service=None, user=None, month_info=None):
         user_work_hrs = timedelta(days=0, seconds=0)
 
         for s in services:
-            work_list = Work.query.filter(Work.service_id == s.id,
-                                          Work.user_id == u.id,
-                                          func.datetime(Work.start) > date_start,
-                                          func.datetime(Work.stop) < date_stop
+            work_list = Work.query.filter((Work.service_id == s.id)
+                                          & (Work.user_id == u.id)
+                                          & (Work.start > dt_start)
+                                          & (Work.stop < dt_stop)
                                           ).all()
 
             for w in work_list:
@@ -73,9 +75,9 @@ def service_stat_month(month, service=None, user=None, month_info=None):
             stat_user[s.name] = len(work_list)
             user_all_work += stat_user[s.name]
 
-        stat_user['oncall'] = Oncall.query.filter(Oncall.user_id == u.id,
-                                                  func.datetime(Oncall.start) > date_start,
-                                                  func.datetime(Oncall.start) < date_stop
+        stat_user['oncall'] = Oncall.query.filter((Oncall.user_id == u.id)
+                                                  & (Oncall.start > dt_start)
+                                                  & (Oncall.start < dt_stop)
                                                   ).with_entities(func.count()).scalar()
 
         stat_user['user_all_work'] = user_all_work
@@ -105,14 +107,17 @@ def users_stats(month, service):
 
     date_start = "%s-%s-01 00:00:00" % (start_year, start_month)
     date_stop = "%s-%s-01 00:00:00" % (stop_year, stop_month)
+    dt_start = datetime.strptime(date_start, "%Y-%m-%d %H:%M:%S")
+    dt_stop = datetime.strptime(date_stop, "%Y-%m-%d %H:%M:%S")
+
     stats = {}
 
     for u in service.users:
         user_work_hrs = timedelta(days=0, seconds=0)
 
-        work_list = Work.query.filter(Work.user_id == u.id,
-                                      func.datetime(Work.start) > date_start,
-                                      func.datetime(Work.stop) < date_stop
+        work_list = Work.query.filter((Work.user_id == u.id)
+                                      & (Work.start > dt_start)
+                                      & (Work.stop < dt_stop)
                                       ).all()
 
         for w in work_list:
@@ -217,68 +222,70 @@ def index():
                                                   display_day)
                 date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
                                                   display_day)
+                dt_start = datetime.strptime(date_min, "%Y-%m-%d %H:%M:%S")
+                dt_stop = datetime.strptime(date_max, "%Y-%m-%d %H:%M:%S")
 
                 absence = []
                 if service is not None and username is not None:
                     work = Work.query.filter((Work.service_id == service_obj.id)
                                              & (Work.user_id == user.id)
-                                             & (func.datetime(Work.start) > date_min)
-                                             & (func.datetime(Work.stop) < date_max)
+                                             & (Work.start > dt_start)
+                                             & (Work.stop < dt_stop)
                                              ).order_by(Work.start)
 
                     oncall = Oncall.query.filter((Oncall.service_id == service_obj.id)
-                                                 & (func.datetime(Oncall.start) > date_min)
-                                                 & (func.datetime(Oncall.stop) < date_max)
+                                                 & (Oncall.start > dt_start)
+                                                 & (Oncall.stop < dt_stop)
                                                  ).order_by(Oncall.start)
 
-                    absence = Absence.query.filter(Absence.user_id == user.id,
-                                                   func.datetime(Absence.start) > date_min,
-                                                   func.datetime(Absence.stop) < date_max
+                    absence = Absence.query.filter((Absence.user_id == user.id)
+                                                   & (Absence.start > dt_start)
+                                                   & (Absence.stop < dt_stop)
                                                    ).all()
 
                 elif service is not None:
                     work = Work.query.filter((Work.service_id == service_obj.id)
-                                             & (func.datetime(Work.start) > date_min)
-                                             & (func.datetime(Work.stop) < date_max)
+                                             & (Work.start > dt_start)
+                                             & (Work.stop < dt_stop)
                                              ).order_by(Work.start)
 
                     oncall = Oncall.query.filter((Oncall.service_id == service_obj.id)
-                                                 & (func.datetime(Oncall.start) > date_min)
-                                                 & (func.datetime(Oncall.stop) < date_max)
+                                                 & (Oncall.start > dt_start)
+                                                 & (Oncall.stop < dt_stop)
                                                  ).order_by(Oncall.start)
 
                     for u in service_obj.users:
-                        absence += Absence.query.filter(Absence.user_id == u.id,
-                                                        func.datetime(Absence.start) > date_min,
-                                                        func.datetime(Absence.stop) < date_max
+                        absence += Absence.query.filter((Absence.user_id == u.id)
+                                                        & (Absence.start > dt_start)
+                                                        & (Absence.stop < dt_stop)
                                                         ).all()
 
                 elif username is not None:
-                    work = Work.query.filter(Work.user_id == user.id,
-                                             func.datetime(Work.start) > date_min,
-                                             func.datetime(Work.stop) < date_max
+                    work = Work.query.filter((Work.user_id == user.id)
+                                             & (Work.start > dt_start)
+                                             & (Work.stop < dt_stop)
                                              ).order_by(Work.start)
 
                     oncall = Oncall.query.filter((Oncall.user_id == user.id)
-                                                 & (func.datetime(Oncall.start) > date_min)
-                                                 & (func.datetime(Oncall.start) < date_max)
+                                                 & (Oncall.start > dt_start)
+                                                 & (Oncall.stop < dt_stop)
                                                  ).order_by(Oncall.start)
 
-                    absence = Absence.query.filter(Absence.user_id == user.id,
-                                                   func.datetime(Absence.start) > date_min,
-                                                   func.datetime(Absence.stop) < date_max
+                    absence = Absence.query.filter((Absence.user_id == user.id)
+                                                   & (Absence.start > dt_start)
+                                                   & (Absence.stop < dt_stop)
                                                    ).all()
 
                 else:
                     work = []
                     for s in services:
                         w = Work.query.filter((Work.service_id == s.id)
-                                              & (func.datetime(Work.start) > date_min)
-                                              & (func.datetime(Work.stop) < date_max)
+                                              & (Work.start > dt_start)
+                                              & (Work.stop < dt_stop)
                                               ).order_by(Work.start)
                         work += w
-                    oncall = Oncall.query.filter((func.datetime(Oncall.start) > date_min)
-                                                 & (func.datetime(Oncall.start) < date_max)
+                    oncall = Oncall.query.filter((Oncall.start > dt_start)
+                                                 & (Oncall.stop < dt_stop)
                                                  ).order_by(Oncall.start)
 
                     absence = Absence.query.filter(
@@ -287,8 +294,8 @@ def index():
                                                    | (Absence.start < dt_start) & (Absence.stop > dt_stop)
                                                    ).all()
 
-                nonworkingdays = NonWorkingDays.query.filter((func.datetime(NonWorkingDays.start) > date_min)
-                                                             & (func.datetime(NonWorkingDays.start) < date_max)
+                nonworkingdays = NonWorkingDays.query.filter((NonWorkingDays.start > dt_start)
+                                                             & (NonWorkingDays.start < dt_stop)
                                                              ).all()
                 if weekday not in working_days:
                     # TODO does not accounts for half days off
@@ -355,6 +362,8 @@ def explore():
     now_month = '{:02d}'.format(dt_today.month)
 
     date_min = "%s-%s-%s 00:00:00" % (dt_today.year, now_month, now_day)
+    dt_start = datetime.strptime(date_min, "%Y-%m-%d %H:%M:%S")
+
     all = request.args.get('all', 0, type=int)
     page = request.args.get('page', 1, type=int)
 
@@ -363,7 +372,7 @@ def explore():
                               page, current_app.config['POSTS_PER_PAGE'], False)
     else:
         work = Work.query.filter((Work.status != "assigned")
-                                 & (func.datetime(Work.start) > date_min)
+                                 & (Work.start > dt_start)
                                  ).order_by(Work.start.desc()).paginate(
                               page, current_app.config['POSTS_PER_PAGE'], False)
 
@@ -417,6 +426,7 @@ def service_add():
             user = User.query.get(u)
             print("Adding: User: %s to: %s" % (user.username, service.name))
             service.users.append(user)
+        service.manager = User.query.filter_by(id=form.manager.data).first()
         db.session.add(service)
         db.session.commit()
         flash(_('Service have been saved.'))
@@ -544,13 +554,14 @@ def work_add():
                              for u in service.users]
 
     if request.method == 'POST' and form.validate_on_submit():
+        print("service: {}".format(form.service.data))
         service = Service.query.get(form.service.data)
         if service is None:
             flash(_('Service not found'))
             return redirect(request.referrer)
 
         user = User.query.get(form.user.data)
-        if serviceuser is None:
+        if user is None:
             flash(_('User not found'))
             return redirect(request.referrer)
 
@@ -608,6 +619,8 @@ def select_user_for_weighted_work(service, start, stop):
 
     day_start = "%d-%02d-%02d %s:%s" % (start.year, start.month, start.day, "00", "00")
     day_stop = "%d-%02d-%02d %s:%s" % (stop.year, stop.month, stop.day, "23", "59")
+    dt_start = datetime.strptime(day_start, "%Y-%m-%d %H:%M")
+    dt_stop = datetime.strptime(day_stop, "%Y-%m-%d %H:%M")
 
     stats = users_stats(start, service)
     import pprint
@@ -627,18 +640,19 @@ def select_user_for_weighted_work(service, start, stop):
             continue
         if user_obj.manual_schedule:
             continue
-        alredy_working = Work.query.filter(Work.user_id == user_obj.id,
-                                           func.datetime(Work.start) >= day_start,
-                                           func.datetime(Work.stop) <= day_stop
+        alredy_working = Work.query.filter((Work.user_id == user_obj.id)
+                                           & (Work.start >= dt_start)
+                                           & (Work.stop <= dt_stop)
                                            ).all()
 
         for w in alredy_working:
             print("user: {} is already working {} to {} at: {} not assigning any work".format(w.user.username, w.start, w.stop, w.service))
             continue
 
-        absentees = Absence.query.filter(Absence.user_id == user_obj.id,
-                                         Absence.start <= stop,
-                                         Absence.stop >= stop).all()
+        absentees = Absence.query.filter((Absence.user_id == user_obj.id)
+                                         & (Absence.start <= stop)
+                                         & (Absence.stop >= stop)
+                                         ).all()
 
         for a in absentees:
             print("user: {} is absent during {} to {} not assigning any work".format(a.user.username, a.start, a.stop))
@@ -905,8 +919,6 @@ def absence_add():
 
     form = AbsenceForm()
 
-    absence = Absence.query.order_by(Absence.start)
-
     if request.method == 'POST' and form.validate_on_submit():
         absence = Absence(start=form.start.data,
                           stop=form.stop.data,
@@ -928,6 +940,15 @@ def absence_add():
 
         return redirect(url_for('main.index'))
     else:
+        day = request.args.get('day')
+        month = request.args.get('month')
+        if day is not None and month is not None:
+            date_start_str = month + "-" + day + " 08:00"
+            date_stop_str = month + "-" + day + " 17:00"
+
+            form.start.data = datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
+            form.stop.data = datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
+
         return render_template('absence.html', title=_('Add absence'),
                                form=form)
 
