@@ -321,6 +321,7 @@ def index():
     month_info['next'] = next_month.strftime("%b")
     month_info['today_day'] = date.today().strftime("%d")
     month_info['today_year_month'] = date.today().strftime("%Y-%m")
+    month_info['date_link_to'] = current_app.config['DATE_LINK_TO']
     next_url = url_for('main.index', month=next_month.strftime("%Y-%m"))
     prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
 
