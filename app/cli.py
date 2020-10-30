@@ -2,7 +2,7 @@ from flask import current_app
 import click
 from pprint import pprint
 from rocketchat_API.rocketchat import RocketChat
-from app.models import Work, User
+from app.models import Work, User, Oncall
 # from datetime import datetime
 from sqlalchemy import func
 import time
@@ -41,8 +41,33 @@ def register(app):
                             server_url=current_app.config['ROCKET_URL'])
 
         for w in work:
-            msg = 'about to work: %s\t%s\t%s\t@%s ' % (w.start, w.stop,
+            msg = 'Upcoming work: %s\t%s\t%s\t@%s ' % (w.start, w.stop,
                                                        w.service, w.user.username)
+            pprint(rocket.chat_post_message(msg, channel=current_app.
+                                            config['ROCKET_CHANNEL']).json())
+            time.sleep(1)
+
+    @chat.command()
+    @click.argument('start')
+    @click.argument('stop')
+    def oncall(start, stop):
+        """send who works today."""
+        print("start: %s stop: %s" % (start, stop))
+
+        dt_start = datetime.strptime(start, "%Y-%m-%d %H:%M")
+        dt_stop = datetime.strptime(stop, "%Y-%m-%d %H:%M")
+
+        oncall = Oncall.query.filter((Oncall.start > dt_start)
+                                     & (Work.stop < dt_stop)
+                                     ).all()
+
+        rocket = RocketChat(current_app.config['ROCKET_USER'],
+                            current_app.config['ROCKET_PASS'],
+                            server_url=current_app.config['ROCKET_URL'])
+
+        for o in oncall:
+            msg = 'oncall: %s\t%s\t%s\t@%s ' % (o.start, o.stop,
+                                                o.service, o.user.username)
             pprint(rocket.chat_post_message(msg, channel=current_app.
                                             config['ROCKET_CHANNEL']).json())
             time.sleep(1)
