@@ -281,8 +281,10 @@ def index():
                                                  & (func.datetime(Oncall.start) < date_max)
                                                  ).order_by(Oncall.start)
 
-                    absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
-                                                   func.datetime(Absence.stop) < date_max
+                    absence = Absence.query.filter(
+                                                   (Absence.start > dt_start) & (Absence.start < dt_stop)
+                                                   | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                                   | (Absence.start < dt_start) & (Absence.stop > dt_stop)
                                                    ).all()
 
                 nonworkingdays = NonWorkingDays.query.filter((func.datetime(NonWorkingDays.start) > date_min)
