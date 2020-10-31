@@ -950,7 +950,7 @@ def work_edit():
     workid = request.args.get('work')
 
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
     if 'delete' in request.form:
         return redirect(url_for('main.work_delete', work=workid))
 
@@ -968,14 +968,14 @@ def work_edit():
 
         if current_app.config['ENFORCE_ROLES'] is True:
             user = User.query.filter_by(username=current_user.username).first()
-            if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
+            if user.role != "admin" and (form.status.data == "unassigned"):
                 flash(_('Users may only change to wants/needs-out status, other are limited to admins'))
                 return redirect(url_for('main.index'))
             if user.role != "admin" and form.user.data != user.id:
                 flash(_('Users may only assign work to them self, other are limited to admins'))
                 return redirect(url_for('main.index'))
-            if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
-                flash(_('Users may only take that is status: wants/needs-out, other are limited to admins'))
+            # if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
+            #     flash(_('Users may only take that is status: wants/needs-out, other are limited to admins'))
 
         if service is None:
             print("service is none...")
