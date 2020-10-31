@@ -27,7 +27,7 @@ def login():
             next_page = url_for('main.index')
         return redirect(next_page)
     return render_template('auth/login.html', title=_('Sign In'), form=form)
- 
+
 
 @bp.route('/logout')
 def logout():
@@ -45,6 +45,11 @@ def register():
         if not current_user.is_authenticated:
             flash(_('Registration is not open, contact admin to get an account'))
             return redirect(url_for('main.index'))
+        elif current_app.config['ENFORCE_ROLES'] is True:
+            user = User.query.filter_by(username=current_user.username).first()
+            if user.role != "admin":
+                flash(_('Registration of users is limited to admins'))
+                return redirect(url_for('main.index'))
 
     form = RegistrationForm()
     if form.validate_on_submit():

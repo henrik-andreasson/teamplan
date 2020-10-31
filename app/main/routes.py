@@ -424,6 +424,12 @@ def service_add():
     if 'cancel' in request.form:
         return redirect(request.referrer)
 
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Service registration is limited to admins'))
+            return redirect(url_for('main.index'))
+
     form = ServiceForm()
 
     if form.validate_on_submit():
@@ -452,6 +458,12 @@ def service_add():
 def service_edit():
     if 'cancel' in request.form:
         return redirect(request.referrer)
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Service modification is limited to admins'))
+            return redirect(url_for('main.index'))
 
     servicename = request.args.get('name')
     service = Service.query.filter_by(name=servicename).first()
@@ -540,6 +552,13 @@ def ical_reset_api_key():
 @bp.route('/work/add', methods=['GET', 'POST'])
 @login_required
 def work_add():
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Work registration is limited to admins / Service managers'))
+            return redirect(url_for('main.index'))
+
     form = WorkForm()
     if 'cancel' in request.form:
         return redirect(request.referrer)
@@ -757,8 +776,9 @@ def select_user_for_weighted_oncall(service, start, stop):
 
         for a in absentees:
             print("user: {} is absent during {} to {} not assigning any work".format(a.user.username, a.start, a.stop))
-            available_users.remove(a.user)
-            continue
+            if a.user in available_users:
+                available_users.remove(a.user)
+                continue
 
     since_last_oncall = dt_start - relativedelta.relativedelta(months=12)
     selected_oncall_user = None
@@ -779,6 +799,13 @@ def select_user_for_weighted_oncall(service, start, stop):
 @bp.route('/work/add/month', methods=['GET', 'POST'])
 @login_required
 def work_add_month():
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Generate month is limited to admins / service managers'))
+            return redirect(url_for('main.index'))
+
     form = GenrateMonthWorkForm()
     month = request.args.get('month')
     if 'cancel' in request.form:
@@ -938,6 +965,18 @@ def work_edit():
         string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
                                              work.service, work.user.username)
         service = Service.query.filter_by(name=form.service.data).first()
+
+        if current_app.config['ENFORCE_ROLES'] is True:
+            user = User.query.filter_by(username=current_user.username).first()
+            if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
+                flash(_('Users may only change to wants/needs-out status, other are limited to admins'))
+                return redirect(url_for('main.index'))
+            if user.role != "admin" and form.user.data != user.id:
+                flash(_('Users may only assign work to them self, other are limited to admins'))
+                return redirect(url_for('main.index'))
+            if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
+                flash(_('Users may only take that is status: wants/needs-out, other are limited to admins'))
+
         if service is None:
             print("service is none...")
         else:
@@ -1010,7 +1049,7 @@ def work_list():
 
     elif username is not None:
         u = User.query.filter(User.username == username).first_or_404()
-        work = Work.query.filter(Work.user_id == u.id ).paginate(
+        work = Work.query.filter(Work.user_id == u.id).paginate(
             page, current_app.config['POSTS_PER_PAGE'], False)
 
     else:
@@ -1031,6 +1070,12 @@ def work_list():
 @bp.route('/work/delete/', methods=['GET', 'POST'])
 @login_required
 def work_delete():
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Delete work is limited to admins / service managers'))
+            return redirect(url_for('main.index'))
 
     workid = request.args.get('work')
     work = Work.query.get(workid)
@@ -1067,6 +1112,13 @@ def absence_add():
     form = AbsenceForm()
 
     if request.method == 'POST' and form.validate_on_submit():
+
+        if current_app.config['ENFORCE_ROLES'] is True:
+            user = User.query.filter_by(username=current_user.username).first()
+            if user.role != "admin" and form.status.data != "requested":
+                flash(_('status is changed to requested, only admins / service managers can directly approve'))
+                form.status.data = "requested"
+
         absence = Absence(start=form.start.data,
                           stop=form.stop.data,
                           user_id=form.user.data,
@@ -1119,6 +1171,13 @@ def absence_edit():
     form = AbsenceForm(formdata=request.form, obj=absence)
 
     if request.method == 'POST' and form.validate_on_submit():
+
+        if current_app.config['ENFORCE_ROLES'] is True:
+            user = User.query.filter_by(username=current_user.username).first()
+            if user.role != "admin" and form.status.data != "requested":
+                flash(_('status is changed to requested, only admins / service managers can directly approve'))
+                form.status.data = "requested"
+
         rocket_msg_from = 'edit of absence from: \n%s\t%s\t%s\t@%s' % (absence.start,
                                                                        absence.stop,
                                                                        absence.status,
@@ -1193,6 +1252,12 @@ def absence_delete():
         flash(_('Absence was not deleted, id not found!'))
         return redirect(url_for('main.index'))
 
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin" and absence.user_id != user.id:
+            flash(_('Delete others absence is only available to admins / service managers'))
+            return redirect(request.referrer)
+
     deleted_msg = 'Absence deleted: %s\t%s\t%s\n' % (absence.start, absence.stop, absence.user.username)
     if current_app.config['ROCKET_ENABLED']:
         rocket = RocketChat(current_app.config['ROCKET_USER'],
@@ -1215,6 +1280,12 @@ def oncall_add():
     form = OncallForm()
     if 'cancel' in request.form:
         return redirect(request.referrer)
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Add oncall is only available to admins / service managers'))
+            return redirect(request.referrer)
 
     if request.method == 'POST' and form.validate_on_submit():
         service = Service.query.get(form.service.data)
@@ -1288,6 +1359,13 @@ def oncall_edit():
 
     form = OncallForm(formdata=request.form, obj=oncall)
     if request.method == 'POST' and form.validate_on_submit():
+
+        if current_app.config['ENFORCE_ROLES'] is True:
+            user = User.query.filter_by(username=current_user.username).first()
+            if user.role != "admin" and (form.status.date != "wants-out" or form.status.data != "needs-out"):
+                flash(_('Edit oncall, other than requesting wants/needs out, is only available to admins / service managers'))
+                return redirect(request.referrer)
+
         string_from = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
                                              oncall.service, oncall.user.username)
         oncall.start = form.start.data
@@ -1367,6 +1445,12 @@ def oncall_delete():
         flash(_('oncall was not deleted, id not found!'))
         return redirect(url_for('main.index'))
 
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Delete oncall is only available to admins / service managers'))
+            return redirect(request.referrer)
+
     deleted_msg = 'oncall deleted: %s\t%s\t%s @%s\n' % (oncall.start,
                                                         oncall.stop,
                                                         oncall.service,
@@ -1391,12 +1475,20 @@ def oncall_delete():
 def nonworkingdays_add():
     if 'cancel' in request.form:
         return redirect(request.referrer)
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Add of Non working days is only available to admins / service managers'))
+            return redirect(request.referrer)
+
     form = NonWorkingDaysForm()
 
     if request.method == 'POST' and form.validate_on_submit():
         nonworkingdays = NonWorkingDays(start=form.start.data,
                                         stop=form.stop.data,
                                         name=form.name.data)
+
         db.session.add(nonworkingdays)
         db.session.commit()
         flash(_('New nonworkingdays is now posted!'))
@@ -1432,6 +1524,12 @@ def nonworkingdays_edit():
     if nwd is None:
         render_template('nonworkingdays.html',
                         title=_('nonworkingdays is not defined'))
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Edit of Non working days is only available to admins / service managers'))
+            return redirect(request.referrer)
 
     if 'delete' in request.form:
         return redirect(url_for('main.nonworkingday_delete',
@@ -1494,6 +1592,12 @@ def nonworkingday_delete():
     if nonworkingday is None:
         flash(_('nonworkingday was not deleted, id not found!'))
         return redirect(url_for('main.index'))
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Delete of Non working days is only available to admins / service managers'))
+            return redirect(request.referrer)
 
     deleted_msg = 'nonworkingday deleted: %s\t%s\t%s\n' % (nonworkingday.start,
                                                            nonworkingday.stop,

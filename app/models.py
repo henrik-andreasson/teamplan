@@ -97,6 +97,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     token_expiration = db.Column(db.DateTime)
     manual_schedule = db.Column(db.Integer)
     work_percent = db.Column(db.Integer)
+    role = db.Column(db.String(140))
 
     def __repr__(self):
         return '<User {}>'.format(self.username)

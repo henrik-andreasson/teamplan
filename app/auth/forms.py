@@ -23,6 +23,8 @@ class RegistrationForm(FlaskForm):
                                   choices=[('1', 'Yes'), (0, 'No')],
                                   coerce=int, default=0)
     work_percent = StringField(_l('Work Percent'), default=100)
+    role = SelectField(_l('Role'), choices=[('user', 'User'),
+                                            ('admin', 'Admin')])
 
     submit = SubmitField(_l('Register'))
 

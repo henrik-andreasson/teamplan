@@ -10,7 +10,7 @@ from app.api.auth import token_auth
 from pprint import pprint
 from rocketchat_API.rocketchat import RocketChat
 
-
+# TODO: check role = admin ...
 @bp.route('/service', methods=['POST'])
 @token_auth.login_required
 def create_service():
