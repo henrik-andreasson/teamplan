@@ -286,7 +286,7 @@ class Oncall(db.Model):
     color = db.Column(db.String(140))
 
     def __repr__(self):
-        return '<Oncall {}>'.format(self.body)
+        return '<Oncall {} {} {}>'.format(self.service, self.start, self.stop)
 
 
 class NonWorkingDays(db.Model):

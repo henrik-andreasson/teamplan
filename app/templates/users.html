@@ -39,8 +39,12 @@
           <td>  {{ user_link }}  </td>
           <td>  {{ u.about_me}} </td>
           <td>
-            {% for service in u.services %}
-                {{ service.name }}
+            {% for service in services %}
+              {% for su in service.users %}
+                {% if su.username == u.username %}
+                  {{ service.name }}
+                {% endif %}
+              {% endfor %}
             {% endfor %}
          </td>
          <td>  {{ u.email}} </td>

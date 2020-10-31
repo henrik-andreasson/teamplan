@@ -284,9 +284,11 @@ def index():
                                               & (Work.stop < dt_stop)
                                               ).order_by(Work.start)
                         work += w
-                    oncall = Oncall.query.filter((Oncall.start > dt_start)
-                                                 & (Oncall.stop < dt_stop)
+                    oncall = Oncall.query.filter(
+                                                 ((Oncall.start > dt_start) & (Oncall.start < dt_stop))
                                                  ).order_by(Oncall.start)
+#                                                 | ((Oncall.stop > dt_start) & (Oncall.stop < dt_stop))
+#                                                 | ((Oncall.start < dt_start) & (Oncall.stop > dt_stop))
 
                     absence = Absence.query.filter(
                                                    (Absence.start > dt_start) & (Absence.start < dt_stop)
@@ -297,6 +299,9 @@ def index():
                 nonworkingdays = NonWorkingDays.query.filter((NonWorkingDays.start > dt_start)
                                                              & (NonWorkingDays.start < dt_stop)
                                                              ).all()
+
+                for o in oncall:
+                    print("oncall debug: {}".format(o))
                 if weekday not in working_days:
                     # TODO does not accounts for half days off
                     non_working_days_in_month += 1
@@ -405,10 +410,11 @@ def user(username):
 def user_list():
     page = request.args.get('page', 1, type=int)
     users = User.query.order_by(User.username).paginate(page, current_app.config['POSTS_PER_PAGE'], False)
+    services = Service.query.all()
 
     next_url = url_for('main.user_list', page=users.next_num) if users.has_next else None
     prev_url = url_for('main.user_list', page=users.prev_num) if users.has_prev else None
-    return render_template('users.html', users=users.items,
+    return render_template('users.html', users=users.items, services=services,
                            next_url=next_url, prev_url=prev_url)
 
 
@@ -623,9 +629,7 @@ def select_user_for_weighted_work(service, start, stop):
     dt_stop = datetime.strptime(day_stop, "%Y-%m-%d %H:%M")
 
     stats = users_stats(start, service)
-    import pprint
-    pp = pprint.PrettyPrinter()
-    pp.pprint(stats)
+
     user_with_least_hours = None
 
     # TODO weird sort ...
@@ -634,38 +638,142 @@ def select_user_for_weighted_work(service, start, stop):
     # check on how many services a user work
     # TODO: able to add % work on a service then use that here
 
-    for user in stats:
-        user_obj = User.query.filter_by(username=user).first()
-        if user_obj is None:
-            continue
-        if user_obj.manual_schedule:
-            continue
-        alredy_working = Work.query.filter((Work.user_id == user_obj.id)
+    available_users = service.users.copy()
+    for au in available_users:
+        print("users: {} at {}".format(au.username, service))
+
+    for au in available_users:
+        print("user: {} works at service: {}".format(au.username, service.name))
+        alredy_working = Work.query.filter((Work.user_id == au.id)
                                            & (Work.start >= dt_start)
                                            & (Work.stop <= dt_stop)
                                            ).all()
-
         for w in alredy_working:
             print("user: {} is already working {} to {} at: {} not assigning any work".format(w.user.username, w.start, w.stop, w.service))
-            continue
+            if w.user in available_users:
+                available_users.remove(w.user)
+                continue
 
-        absentees = Absence.query.filter((Absence.user_id == user_obj.id)
-                                         & (Absence.start <= stop)
-                                         & (Absence.stop >= stop)
+        absentees = Absence.query.filter((Absence.user_id == au.id)
+                                         & ((Absence.start > dt_start) & (Absence.start < dt_stop)
+                                            | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                            | (Absence.start < dt_start) & (Absence.stop > dt_stop)
+                                            )
                                          ).all()
 
         for a in absentees:
             print("user: {} is absent during {} to {} not assigning any work".format(a.user.username, a.start, a.stop))
-            continue
+            if a.user in available_users:
+                available_users.remove(a.user)
+                continue
 
-        print("User: {} has {} h".format(user, stats[user]))
-        if stats[user] < least_worked_hours:
-            print("Selecting: {}({}) over {} ({})".format(user, stats[user], user_with_least_hours, least_worked_hours))
-            user_with_least_hours = user
-            least_worked_hours = stats[user]
+    for user in available_users:
+        print("Checking: User: {} for {} {}-{}".format(user, service.name, start, stop))
+
+        print("User: {} has {} h".format(user.username, stats[user.username]))
+        if stats[user.username] < least_worked_hours:
+            print("Selecting: {}({}) over {} ({})".format(user, stats[user.username], user_with_least_hours, least_worked_hours))
+            user_with_least_hours = user.username
+            least_worked_hours = stats[user.username]
 
     print("Final Select: {}({})\n".format(user_with_least_hours, least_worked_hours))
     return user_with_least_hours
+
+
+def users_stats_oncall(month, service):
+
+    if month is None:
+        return -1
+    else:
+        print("month: {}".format(month))
+
+    measure_start_month = month - relativedelta.relativedelta(months=12)
+    measure_stop_month = month + relativedelta.relativedelta(months=1)
+    measure_stop_date = "%s-%s-01 00:00:00" % (measure_stop_month.year, measure_stop_month.month)
+    measure_start_date = "%s-%s-01 00:00:00" % (measure_start_month.year, measure_start_month.month)
+
+    dt_measure_stop = datetime.strptime(measure_stop_date, "%Y-%m-%d %H:%M:%S")
+    dt_measure_start = datetime.strptime(measure_start_date, "%Y-%m-%d %H:%M:%S")
+    stats = {}
+#    print("measuring oncalls for stats from: {} to {}".format(dt_measure_start, dt_measure_stop))
+
+    for u in service.users:
+        number_of_oncalls = 0
+        oncall_list = Oncall.query.filter((Oncall.user_id == u.id)
+                                          & (Oncall.start > dt_measure_start)
+                                          & (Oncall.start < dt_measure_stop)
+                                          ).all()
+        import pprint
+        pp = pprint.PrettyPrinter()
+        pp.pprint(oncall_list)
+
+        last_oncall = dt_measure_start
+        for oc in oncall_list:
+#            print("stats oncall, checking {} vs {}".format(last_oncall, oc.stop))
+            if last_oncall < oc.stop:
+                last_oncall = oc.stop
+            number_of_oncalls += 1
+
+        stats[u.username] = last_oncall
+# TODO        stats[u.username]['number_of_oncalls'] = number_of_oncalls
+
+    return stats
+
+
+def select_user_for_weighted_oncall(service, start, stop):
+    if service is None:
+        print("select_user_for_weighted_work: Service none")
+        return None
+
+    if start is None:
+        print("select_user_for_weighted_work: start none")
+        return None
+
+    if stop is None:
+        print("select_user_for_weighted_work: stop none")
+        return None
+
+    day_start = "%d-%02d-%02d %s:%s" % (start.year, start.month, start.day, "00", "00")
+    day_stop = "%d-%02d-%02d %s:%s" % (stop.year, stop.month, stop.day, "23", "59")
+    dt_start = datetime.strptime(day_start, "%Y-%m-%d %H:%M")
+    dt_stop = datetime.strptime(day_stop, "%Y-%m-%d %H:%M")
+
+    stats = users_stats_oncall(start, service)
+    import pprint
+    pp = pprint.PrettyPrinter()
+    pp.pprint(stats)
+
+    available_users = service.users.copy()
+
+    for au in available_users:
+        print("user: {} works at service: {}".format(au.username, service.name))
+
+        absentees = Absence.query.filter((Absence.user_id == au.id)
+                                         & ((Absence.start > dt_start) & (Absence.start < dt_stop)
+                                            | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                            | (Absence.start < dt_start) & (Absence.stop > dt_stop)
+                                            )
+                                         ).all()
+
+        for a in absentees:
+            print("user: {} is absent during {} to {} not assigning any work".format(a.user.username, a.start, a.stop))
+            available_users.remove(a.user)
+            continue
+
+    since_last_oncall = dt_start - relativedelta.relativedelta(months=12)
+    selected_oncall_user = None
+    for user in available_users:
+        print("Checking: User: {} for {} {}-{}".format(user, service.name, start, stop))
+
+        print("User: {} has last oncall at: {}".format(user.username, stats[user.username]))
+
+        if stats[user.username] <= since_last_oncall:
+            print("Selecting: {}({}) over {} ({})".format(user, stats[user.username], selected_oncall_user, since_last_oncall))
+            selected_oncall_user = user.username
+            since_last_oncall = stats[user.username]
+
+    print("Oncall final Select: {}({})\n".format(selected_oncall_user, since_last_oncall))
+    return selected_oncall_user
 
 
 @bp.route('/work/add/month', methods=['GET', 'POST'])
@@ -699,8 +807,46 @@ def work_add_month():
                 weekday = calendar.weekday(selected_month.year, selected_month.month, i)
             except ValueError:
                 continue
-            if weekday < calendar.SATURDAY:
+            if weekday == calendar.MONDAY:
+                #TODO: make the oncall start day configurable
+                oncall_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
+                dt_oncall_start = datetime.strptime(oncall_start, "%Y-%m-%d %H:%M")
+                dt_oncall_stop = dt_oncall_start + relativedelta.relativedelta(days=7)
+                oncall_check_exist = Oncall.query.filter((Oncall.service_id == service.id)
+                                                         & (Oncall.start == dt_oncall_start)
+                                                         & (Oncall.stop == dt_oncall_stop)
+                                                         ).all()
+                if not oncall_check_exist:
+                    oncall = Oncall(start=dt_oncall_start,
+                                    stop=dt_oncall_stop,
+                                    color=service.color,
+                                    status=status)
+                    print("New oncall, {}-{}".format(dt_oncall_start, dt_oncall_stop))
+                    if status == "assigned":
+                        selected_username = select_user_for_weighted_oncall(service, dt_oncall_start, dt_oncall_stop)
+                        selected_user = User.query.filter_by(username=selected_username).first()
+                        if selected_user is not None:
+                            oncall.user = selected_user
+                            if form.oncallabsenceday.data != 0:
+                                #        when ever the oncall starts - its weekday (find monday) + 1 week (next monday) + selected absence day
+                                oncall_absence_day = dt_oncall_start - timedelta(days=-dt_oncall_start.weekday()) + timedelta(days=7) + timedelta(days=form.oncallabsenceday.data - 1)
+                                # TODO make the start and end of day configurable
+                                dt_absence_start = datetime(oncall_absence_day.year, oncall_absence_day.month, oncall_absence_day.day, 8, 0)
+                                dt_absence_stop = datetime(oncall_absence_day.year, oncall_absence_day.month, oncall_absence_day.day, 17, 0)
+                                absence = Absence(start=dt_absence_start,
+                                                  stop=dt_absence_stop,
+                                                  user_id=selected_user.id)
+                                db.session.add(absence)
+                        else:
+                            oncall.status = "unassigned"
+                            print("failed to find the user to assign for oncall {}".format(selected_username))
 
+                    oncall.service = service
+                    db.session.add(oncall)
+                    db.session.commit()
+
+            if weekday < calendar.SATURDAY:
+                # TODO: make the shifts configurable
                 fm_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
                 fm_stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
                 dt_fm_start = datetime.strptime(fm_start, "%Y-%m-%d %H:%M")
@@ -710,7 +856,6 @@ def work_add_month():
                 work_fm_exist = None
                 for w in allwork:
                     if w.service.name == service.name and w.start == dt_fm_start and w.stop == dt_fm_stop:
-                        print("matching service, start and stop: {}".format(service.name))
                         work_fm_exist = True
 
                 if not work_fm_exist:
@@ -725,12 +870,14 @@ def work_add_month():
                         if selected_user is not None:
                             work.user = selected_user
                         else:
+                            work.status = "unassigned"
                             print("failed to find the user object from the username {}".format(selected_username))
 
                     work.service = service
                     db.session.add(work)
                     db.session.commit()
 
+                # TODO: make the shifts configurable
                 em_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "12", "30")
                 em_stop = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "17", "00")
                 dt_em_start = datetime.strptime(em_start, "%Y-%m-%d %H:%M")
@@ -739,7 +886,6 @@ def work_add_month():
                 work_em_exist = None
                 for w in allwork:
                     if w.service.name == service.name and w.start == dt_fm_start and w.stop == dt_fm_stop:
-                        print("matching service, start and stop: {}".format(service.name))
                         work_em_exist = True
 
                 if not work_em_exist:
@@ -754,6 +900,7 @@ def work_add_month():
                         if selected_user2 is not None:
                             work.user = selected_user2
                         else:
+                            work.status = "unassigned"
                             print("failed to find the user object from the username {}".format(selected_username2))
 
                     work.service = service

@@ -34,12 +34,12 @@
       {% for oncall in alloncall %}
       {% set user_link %}
           <a href="{{ url_for('main.oncall_list', username=oncall.username) }}">
-              {{ oncall.username }}
+              {{ oncall.user.username }}
           </a>
       {% endset %}
       {% set service_link %}
           <a href="{{ url_for('main.oncall_list', service=oncall.service) }}">
-              {{ oncall.service }}
+              {{ oncall.service.name }}
           </a>
       {% endset %}
 

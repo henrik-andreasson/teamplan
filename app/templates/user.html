@@ -10,8 +10,8 @@
 
                 <h2>{{ _('Works at:')}}</h2>
                 {% for service in services %}
-                  {% for u in service.users %}
-                    {% if u == current_user %}
+                  {% for su in service.users %}
+                    {% if su.username == user.username %}
                       {{ service.name }}
                     {% endif %}
                   {% endfor %}
