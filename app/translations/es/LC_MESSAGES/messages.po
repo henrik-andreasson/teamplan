@@ -31,8 +31,8 @@ msgid "Error: the translation service failed."
 msgstr "Error el servicio de traducciones ha fallado."
 
 #: app/auth/email.py:8
-msgid "[Microblog] Reset Your Password"
-msgstr "[Microblog] Nueva Contraseña"
+msgid "[Teamplan] Reset Your Password"
+msgstr "[Teamplan] Nueva Contraseña"
 
 #: app/auth/forms.py:9 app/auth/forms.py:16 app/main/forms.py:10
 msgid "Username"
@@ -147,8 +147,8 @@ msgid "Translate"
 msgstr "Traducir"
 
 #: app/templates/base.html:4
-msgid "Welcome to Microblog"
-msgstr "Bienvenido a Microblog"
+msgid "Welcome to Teamplan"
+msgstr "Bienvenido a Teamplan"
 
 #: app/templates/base.html:21
 msgid "Home"
