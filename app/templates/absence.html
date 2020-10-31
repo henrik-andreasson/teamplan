@@ -46,8 +46,8 @@
         <tr>
             <td>  {{ absence.user.username }}  </td>
             <td>  {{ absence.status }}  </td>
-            <td>  {{ absence_start }} </td>
-            <td>  {{ absence_stop }} </td>
+            <td>  {{ absence.start }} </td>
+            <td>  {{ absence.stop }} </td>
             <td>  {{ absence_link }} </td>
         </tr>
         {% endfor %}
@@ -69,7 +69,7 @@
         </nav>
     {% endif %}
 
- 
+
     <hr>
     {% if form %}
     {{ wtf.quick_form(form) }}
