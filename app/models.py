@@ -99,6 +99,12 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     work_percent = db.Column(db.Integer)
     role = db.Column(db.String(140))
 
+    def __eq__(self, other):
+        if self.id == other.id:
+            return True
+        else:
+            return False
+
     def __repr__(self):
         return '<User {}>'.format(self.username)
 

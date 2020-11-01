@@ -6,7 +6,7 @@ from flask_babel import _, get_locale
 from app import db
 from app.main.forms import EditProfileForm, WorkForm, ServiceForm, \
     AbsenceForm, OncallForm, NonWorkingDaysForm, GenrateMonthWorkForm, \
-    FilterUserServiceForm
+    FilterUserServiceForm, GenrateMonthOncallForm
 from app.models import User, Work, Service, Absence, Oncall, NonWorkingDays
 from app.main import bp
 from calendar import Calendar
@@ -234,13 +234,15 @@ def index():
                                              ).order_by(Work.start)
 
                     oncall = Oncall.query.filter((Oncall.service_id == service_obj.id)
-                                                 & (Oncall.start > dt_start)
-                                                 & (Oncall.stop < dt_stop)
+                                                 & (Oncall.user_id == user.id)
+                                                 & ((Oncall.start > dt_start) & (Oncall.start < dt_stop))
                                                  ).order_by(Oncall.start)
 
                     absence = Absence.query.filter((Absence.user_id == user.id)
-                                                   & (Absence.start > dt_start)
-                                                   & (Absence.stop < dt_stop)
+                                                   & ((Absence.start > dt_start) & (Absence.start < dt_stop)
+                                                       | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                                       | (Absence.start < dt_start) & (Absence.stop > dt_stop)
+                                                      )
                                                    ).all()
 
                 elif service is not None:
@@ -250,14 +252,15 @@ def index():
                                              ).order_by(Work.start)
 
                     oncall = Oncall.query.filter((Oncall.service_id == service_obj.id)
-                                                 & (Oncall.start > dt_start)
-                                                 & (Oncall.stop < dt_stop)
+                                                 & ((Oncall.start > dt_start) & (Oncall.start < dt_stop))
                                                  ).order_by(Oncall.start)
 
                     for u in service_obj.users:
                         absence += Absence.query.filter((Absence.user_id == u.id)
-                                                        & (Absence.start > dt_start)
-                                                        & (Absence.stop < dt_stop)
+                                                        & ((Absence.start > dt_start) & (Absence.start < dt_stop)
+                                                           | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                                           | (Absence.start < dt_start) & (Absence.stop > dt_stop)
+                                                           )
                                                         ).all()
 
                 elif username is not None:
@@ -267,13 +270,14 @@ def index():
                                              ).order_by(Work.start)
 
                     oncall = Oncall.query.filter((Oncall.user_id == user.id)
-                                                 & (Oncall.start > dt_start)
-                                                 & (Oncall.stop < dt_stop)
+                                                 & ((Oncall.start > dt_start) & (Oncall.start < dt_stop))
                                                  ).order_by(Oncall.start)
 
                     absence = Absence.query.filter((Absence.user_id == user.id)
-                                                   & (Absence.start > dt_start)
-                                                   & (Absence.stop < dt_stop)
+                                                   & ((Absence.start > dt_start) & (Absence.start < dt_stop)
+                                                      | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                                      | (Absence.start < dt_start) & (Absence.stop > dt_stop)
+                                                      )
                                                    ).all()
 
                 else:
@@ -422,7 +426,7 @@ def user_list():
 @login_required
 def service_add():
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if current_app.config['ENFORCE_ROLES'] is True:
         user = User.query.filter_by(username=current_user.username).first()
@@ -457,7 +461,7 @@ def service_add():
 @login_required
 def service_edit():
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if current_app.config['ENFORCE_ROLES'] is True:
         user = User.query.filter_by(username=current_user.username).first()
@@ -561,7 +565,7 @@ def work_add():
 
     form = WorkForm()
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if 'selected_user' in session:
         user = User.query.filter_by(username=session['selected_user']).first()
@@ -583,12 +587,12 @@ def work_add():
         service = Service.query.get(form.service.data)
         if service is None:
             flash(_('Service not found'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
         user = User.query.get(form.user.data)
         if user is None:
             flash(_('User not found'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
         work = Work(start=form.start.data,
                     stop=form.stop.data,
@@ -646,50 +650,79 @@ def select_user_for_weighted_work(service, start, stop):
     day_stop = "%d-%02d-%02d %s:%s" % (stop.year, stop.month, stop.day, "23", "59")
     dt_start = datetime.strptime(day_start, "%Y-%m-%d %H:%M")
     dt_stop = datetime.strptime(day_stop, "%Y-%m-%d %H:%M")
+    print("finding user for work at service: {} start: {} stop: {}".format(service.name, start, stop))
 
     stats = users_stats(start, service)
 
     user_with_least_hours = None
 
     # TODO weird sort ...
-    least_worked_hours = 10000
 
+    least_worked_hours = 10000
     # check on how many services a user work
     # TODO: able to add % work on a service then use that here
 
-    available_users = service.users.copy()
-    for au in available_users:
-        print("users: {} at {}".format(au.username, service))
+    available_users = []
 
-    for au in available_users:
-        print("user: {} works at service: {}".format(au.username, service.name))
-        alredy_working = Work.query.filter((Work.user_id == au.id)
-                                           & (Work.start >= dt_start)
-                                           & (Work.stop <= dt_stop)
-                                           ).all()
-        for w in alredy_working:
-            print("user: {} is already working {} to {} at: {} not assigning any work".format(w.user.username, w.start, w.stop, w.service))
-            if w.user in available_users:
-                available_users.remove(w.user)
-                continue
-
+    for au in service.users:
+        print("available_users: user: {} works at service: {}".format(au.username, service.name))
+        user_is_absent = 0
         absentees = Absence.query.filter((Absence.user_id == au.id)
-                                         & ((Absence.start > dt_start) & (Absence.start < dt_stop)
-                                            | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
-                                            | (Absence.start < dt_start) & (Absence.stop > dt_stop)
-                                            )
+                                         # & ((Absence.start >= start) & (Absence.stop <= start)  # absence stop after shift start , ends before/same as shift stop
+                                         #    | (Absence.start >= start) & (Absence.stop <= stop)   # absence starts at/before shift starts and end at/before it ends
+                                         #    | (Absence.start >= start) & (Absence.start <= stop)   # absence starts at/after shift starts but before it ends
+                                         #    | (Absence.start <= start) & (Absence.stop >= stop)  # absence starts before shift and ends after shift or same as shift
+                                         #    )
                                          ).all()
 
         for a in absentees:
-            print("user: {} is absent during {} to {} not assigning any work".format(a.user.username, a.start, a.stop))
-            if a.user in available_users:
-                available_users.remove(a.user)
-                continue
+            print("absence user: {} start: {} stop: {}".format(a.user.username, a.start, a.stop))
+            if a.start >= start and a.stop <= start:
+                print("abcense matching1, user: {} should not work during {} to {}".format(a.user.username, a.start, a.stop))
+                user_is_absent = 1
 
-    for user in available_users:
-        print("Checking: User: {} for {} {}-{}".format(user, service.name, start, stop))
+            elif a.start >= start and a.stop <= stop:
+                print("abcense matching2, user: {} should not work during {} to {}".format(a.user.username, a.start, a.stop))
+                user_is_absent = 1
 
-        print("User: {} has {} h".format(user.username, stats[user.username]))
+            elif a.start >= stop and a.start <= stop:
+                print("abcense matching3, user: {} should not work during {} to {}".format(a.user.username, a.start, a.stop))
+                user_is_absent = 1
+
+            elif a.start <= stop and a.stop >= stop:
+                print("abcense matching4, user: {} should not work during {} to {}".format(a.user.username, a.start, a.stop))
+                user_is_absent = 1
+
+        if user_is_absent == 0:
+            print("Adding user {} to list is no absent".format(au.username))
+            available_users.append(au)
+        else:
+            print("Will NOT add user {} to list is absent".format(au.username))
+
+    final_set_of_users = []
+
+    for user2 in available_users:
+        print("available_users: user: {} works at service and is not absent: {}".format(user2.username, service.name))
+        user_already_working = 0
+
+        already_working = Work.query.filter((Work.user_id == user2.id)
+                                            & (Work.start >= dt_start)
+                                            & (Work.stop <= dt_stop)
+                                            ).all()
+        for w in already_working:
+            for remove_working_user in available_users:
+                if remove_working_user.username == w.user.username:
+                    print("user: {} is already working {} to {} at: {} not assigning any work".format(w.user.username, w.start, w.stop, w.service))
+                    user_already_working = 1
+        if user_already_working == 0:
+            final_set_of_users.append(user2)
+            print("Adding user {} to list is no absent".format(au.username))
+        else:
+            print("Will NOT add user {} to list is absent".format(au.username))
+
+    for user in final_set_of_users:
+
+        print("final round: User: {} has {} h".format(user.username, stats[user.username]))
         if stats[user.username] < least_worked_hours:
             print("Selecting: {}({}) over {} ({})".format(user, stats[user.username], user_with_least_hours, least_worked_hours))
             user_with_least_hours = user.username
@@ -780,14 +813,14 @@ def select_user_for_weighted_oncall(service, start, stop):
                 available_users.remove(a.user)
                 continue
 
-    since_last_oncall = dt_start - relativedelta.relativedelta(months=12)
+    since_last_oncall = dt_start
     selected_oncall_user = None
     for user in available_users:
         print("Checking: User: {} for {} {}-{}".format(user, service.name, start, stop))
 
-        print("User: {} has last oncall at: {}".format(user.username, stats[user.username]))
+        print("User: {} has last oncall at: {} vs last_oncall: {}".format(user.username, stats[user.username], since_last_oncall))
 
-        if stats[user.username] <= since_last_oncall:
+        if stats[user.username] < since_last_oncall:
             print("Selecting: {}({}) over {} ({})".format(user, stats[user.username], selected_oncall_user, since_last_oncall))
             selected_oncall_user = user.username
             since_last_oncall = stats[user.username]
@@ -809,7 +842,7 @@ def work_add_month():
     form = GenrateMonthWorkForm()
     month = request.args.get('month')
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if month is not None:
         selected_month = datetime.strptime(month, "%Y-%m")
@@ -834,43 +867,6 @@ def work_add_month():
                 weekday = calendar.weekday(selected_month.year, selected_month.month, i)
             except ValueError:
                 continue
-            if weekday == calendar.MONDAY:
-                #TODO: make the oncall start day configurable
-                oncall_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
-                dt_oncall_start = datetime.strptime(oncall_start, "%Y-%m-%d %H:%M")
-                dt_oncall_stop = dt_oncall_start + relativedelta.relativedelta(days=7)
-                oncall_check_exist = Oncall.query.filter((Oncall.service_id == service.id)
-                                                         & (Oncall.start == dt_oncall_start)
-                                                         & (Oncall.stop == dt_oncall_stop)
-                                                         ).all()
-                if not oncall_check_exist:
-                    oncall = Oncall(start=dt_oncall_start,
-                                    stop=dt_oncall_stop,
-                                    color=service.color,
-                                    status=status)
-                    print("New oncall, {}-{}".format(dt_oncall_start, dt_oncall_stop))
-                    if status == "assigned":
-                        selected_username = select_user_for_weighted_oncall(service, dt_oncall_start, dt_oncall_stop)
-                        selected_user = User.query.filter_by(username=selected_username).first()
-                        if selected_user is not None:
-                            oncall.user = selected_user
-                            if form.oncallabsenceday.data != 0:
-                                #        when ever the oncall starts - its weekday (find monday) + 1 week (next monday) + selected absence day
-                                oncall_absence_day = dt_oncall_start - timedelta(days=-dt_oncall_start.weekday()) + timedelta(days=7) + timedelta(days=form.oncallabsenceday.data - 1)
-                                # TODO make the start and end of day configurable
-                                dt_absence_start = datetime(oncall_absence_day.year, oncall_absence_day.month, oncall_absence_day.day, 8, 0)
-                                dt_absence_stop = datetime(oncall_absence_day.year, oncall_absence_day.month, oncall_absence_day.day, 17, 0)
-                                absence = Absence(start=dt_absence_start,
-                                                  stop=dt_absence_stop,
-                                                  user_id=selected_user.id)
-                                db.session.add(absence)
-                        else:
-                            oncall.status = "unassigned"
-                            print("failed to find the user to assign for oncall {}".format(selected_username))
-
-                    oncall.service = service
-                    db.session.add(oncall)
-                    db.session.commit()
 
             if weekday < calendar.SATURDAY:
                 # TODO: make the shifts configurable
@@ -938,7 +934,7 @@ def work_add_month():
         return redirect(url_for('main.index'))
 
     else:
-        form.month.data = datetime.utcnow() + relativedelta.relativedelta(months=1)
+        form.month.data = selected_month
         return render_template('generate_month_work.html', title=_('Add Work for a month'),
                                form=form)
 
@@ -1107,7 +1103,7 @@ def work_delete():
 def absence_add():
 
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     form = AbsenceForm()
 
@@ -1160,7 +1156,7 @@ def absence_edit():
     absence = Absence.query.get(absenceid)
 
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if 'delete' in request.form:
         return redirect(url_for('main.absence_delete', absence=absenceid))
@@ -1256,7 +1252,7 @@ def absence_delete():
         user = User.query.filter_by(username=current_user.username).first()
         if user.role != "admin" and absence.user_id != user.id:
             flash(_('Delete others absence is only available to admins / service managers'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
     deleted_msg = 'Absence deleted: %s\t%s\t%s\n' % (absence.start, absence.stop, absence.user.username)
     if current_app.config['ROCKET_ENABLED']:
@@ -1279,19 +1275,19 @@ def absence_delete():
 def oncall_add():
     form = OncallForm()
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if current_app.config['ENFORCE_ROLES'] is True:
         user = User.query.filter_by(username=current_user.username).first()
         if user.role != "admin":
             flash(_('Add oncall is only available to admins / service managers'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
     if request.method == 'POST' and form.validate_on_submit():
         service = Service.query.get(form.service.data)
         if service is None:
             flash(_('service not found'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
         oncall = Oncall(start=form.start.data,
                         stop=form.stop.data,
@@ -1346,7 +1342,7 @@ def oncall_add():
 @login_required
 def oncall_edit():
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     oncallid = request.args.get('oncall')
     oncall = Oncall.query.get(oncallid)
@@ -1364,7 +1360,7 @@ def oncall_edit():
             user = User.query.filter_by(username=current_user.username).first()
             if user.role != "admin" and (form.status.date != "wants-out" or form.status.data != "needs-out"):
                 flash(_('Edit oncall, other than requesting wants/needs out, is only available to admins / service managers'))
-                return redirect(request.referrer)
+                return redirect(url_for('main.index'))
 
         string_from = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
                                              oncall.service, oncall.user.username)
@@ -1449,7 +1445,7 @@ def oncall_delete():
         user = User.query.filter_by(username=current_user.username).first()
         if user.role != "admin":
             flash(_('Delete oncall is only available to admins / service managers'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
     deleted_msg = 'oncall deleted: %s\t%s\t%s @%s\n' % (oncall.start,
                                                         oncall.stop,
@@ -1470,17 +1466,102 @@ def oncall_delete():
     return redirect(url_for('main.index'))
 
 
+@bp.route('/oncall/add/month', methods=['GET', 'POST'])
+@login_required
+def oncall_add_month():
+
+    if current_app.config['ENFORCE_ROLES'] is True:
+        user = User.query.filter_by(username=current_user.username).first()
+        if user.role != "admin":
+            flash(_('Generate oncall month is limited to admins / service managers'))
+            return redirect(url_for('main.index'))
+
+    form = GenrateMonthOncallForm()
+    month = request.args.get('month')
+    if 'cancel' in request.form:
+        return redirect(url_for('main.index'))
+
+    if month is not None:
+        selected_month = datetime.strptime(month, "%Y-%m")
+        session['selected_month'] = month
+    elif 'selected_month' in session:
+        month = session['selected_month']
+        selected_month = datetime.strptime(month, "%Y-%m")
+    else:
+        selected_month = datetime.utcnow()
+
+    form.service.choices = [(s.id, s.name) for s in Service.query.all()]
+
+    if request.method == 'POST' and form.validate_on_submit():
+        service = Service.query.filter_by(id=form.service.data).first()
+        selected_month = form.month.data
+        status = form.status.data
+
+        c = calendar.Calendar()
+        for i in c.itermonthdays(selected_month.year, selected_month.month):
+
+            try:
+                weekday = calendar.weekday(selected_month.year, selected_month.month, i)
+            except ValueError:
+                continue
+            if weekday == calendar.MONDAY:
+                #TODO: make the oncall start day configurable
+                oncall_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
+                dt_oncall_start = datetime.strptime(oncall_start, "%Y-%m-%d %H:%M")
+                dt_oncall_stop = dt_oncall_start + relativedelta.relativedelta(days=7)
+                oncall_check_exist = Oncall.query.filter((Oncall.service_id == service.id)
+                                                         & (Oncall.start == dt_oncall_start)
+                                                         & (Oncall.stop == dt_oncall_stop)
+                                                         ).all()
+                if not oncall_check_exist:
+                    oncall = Oncall(start=dt_oncall_start,
+                                    stop=dt_oncall_stop,
+                                    color=service.color,
+                                    status=status)
+                    print("New oncall, {}-{}".format(dt_oncall_start, dt_oncall_stop))
+                    if status == "assigned":
+                        selected_username = select_user_for_weighted_oncall(service, dt_oncall_start, dt_oncall_stop)
+                        selected_user = User.query.filter_by(username=selected_username).first()
+                        if selected_user is not None:
+                            oncall.user = selected_user
+                            if form.oncallabsenceday.data != 0:
+                                #        when ever the oncall starts - its weekday (find monday) + 1 week (next monday) + selected absence day
+                                oncall_absence_day = dt_oncall_start - timedelta(days=-dt_oncall_start.weekday()) + timedelta(days=7) + timedelta(days=form.oncallabsenceday.data - 1)
+                                # TODO make the start and end of day configurable
+                                dt_absence_start = datetime(oncall_absence_day.year, oncall_absence_day.month, oncall_absence_day.day, 8, 0)
+                                dt_absence_stop = datetime(oncall_absence_day.year, oncall_absence_day.month, oncall_absence_day.day, 17, 0)
+                                absence = Absence(start=dt_absence_start,
+                                                  stop=dt_absence_stop,
+                                                  user_id=selected_user.id)
+                                db.session.add(absence)
+                        else:
+                            oncall.status = "unassigned"
+                            print("failed to find the user to assign for oncall {}".format(selected_username))
+
+                    oncall.service = service
+                    db.session.add(oncall)
+                    db.session.commit()
+
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('main.index'))
+
+    else:
+        form.month.data = selected_month
+        return render_template('generate_month_oncall.html', title=_('Add Oncall for a month'),
+                               form=form)
+
+
 @bp.route('/nonworkingdays/add', methods=['GET', 'POST'])
 @login_required
 def nonworkingdays_add():
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     if current_app.config['ENFORCE_ROLES'] is True:
         user = User.query.filter_by(username=current_user.username).first()
         if user.role != "admin":
             flash(_('Add of Non working days is only available to admins / service managers'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
     form = NonWorkingDaysForm()
 
@@ -1516,7 +1597,7 @@ def nonworkingdays_add():
 def nonworkingdays_edit():
 
     if 'cancel' in request.form:
-        return redirect(request.referrer)
+        return redirect(url_for('main.index'))
 
     nonworkingdaysid = request.args.get('nwd')
     nwd = NonWorkingDays.query.get(nonworkingdaysid)
@@ -1529,7 +1610,7 @@ def nonworkingdays_edit():
         user = User.query.filter_by(username=current_user.username).first()
         if user.role != "admin":
             flash(_('Edit of Non working days is only available to admins / service managers'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
     if 'delete' in request.form:
         return redirect(url_for('main.nonworkingday_delete',
@@ -1597,7 +1678,7 @@ def nonworkingday_delete():
         user = User.query.filter_by(username=current_user.username).first()
         if user.role != "admin":
             flash(_('Delete of Non working days is only available to admins / service managers'))
-            return redirect(request.referrer)
+            return redirect(url_for('main.index'))
 
     deleted_msg = 'nonworkingday deleted: %s\t%s\t%s\n' % (nonworkingday.start,
                                                            nonworkingday.stop,

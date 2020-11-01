@@ -83,22 +83,6 @@ class GenrateMonthWorkForm(FlaskForm):
                           format='%Y-%m', default=datetime.now())
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned')])
-    oncallstartday = SelectField(_l('Oncall - Start day'),
-                                 choices=[(0, _l('None')),
-                                          (1, _l('Monday')),
-                                          (2, _l('Tuseday')),
-                                          (3, _l('Wednesday')),
-                                          (4, _l('Thursday')),
-                                          (5, _l('Friday'))],
-                                 default=1, coerce=int)
-    oncallabsenceday = SelectField(_l('Oncall - Add absence day'),
-                                   choices=[(0, _l('None')),
-                                            (1, _l('Monday')),
-                                            (2, _l('Tuseday')),
-                                            (3, _l('Wednesday')),
-                                            (4, _l('Thursday')),
-                                            (5, _l('Friday'))],
-                                   default=5, coerce=int)
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
 
@@ -150,6 +134,32 @@ class OncallForm(FlaskForm):
         super().__init__(*args, **kwargs)
         self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
         self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
+
+
+class GenrateMonthOncallForm(FlaskForm):
+    service = SelectField(_l('service'), validators=[DataRequired()])
+    month = DateTimeField(_l('motnh'), validators=[DataRequired()],
+                          format='%Y-%m', default=datetime.now())
+    status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
+                                                ('unassigned', 'Unassigned')])
+    oncallstartday = SelectField(_l('Oncall - Start day'),
+                                 choices=[(0, _l('None')),
+                                          (1, _l('Monday')),
+                                          (2, _l('Tuseday')),
+                                          (3, _l('Wednesday')),
+                                          (4, _l('Thursday')),
+                                          (5, _l('Friday'))],
+                                 default=1, coerce=int)
+    oncallabsenceday = SelectField(_l('Oncall - Add absence day'),
+                                   choices=[(0, _l('None')),
+                                            (1, _l('Monday')),
+                                            (2, _l('Tuseday')),
+                                            (3, _l('Wednesday')),
+                                            (4, _l('Thursday')),
+                                            (5, _l('Friday'))],
+                                   default=5, coerce=int)
+    submit = SubmitField(_l('Submit'))
+    cancel = SubmitField(_l('Cancel'))
 
 
 class NonWorkingDaysForm(FlaskForm):

@@ -1,7 +1,7 @@
 {% extends 'bootstrap/base.html' %}
 
 {% block title %}
-    {% if title %}{{ title }} - {% else %}{{ _('Welcome to Inventorpy') }}{% endif %}
+    {% if title %}{{ title }} - {% else %}{{ _('Welcome to Teamplan') }}{% endif %}
 {% endblock %}
 
 {% block navbar %}
@@ -36,6 +36,7 @@
          <ul class="dropdown-menu">
            <li class="nav-item"><a href="{{ url_for('main.work_list') }}">{{ _('List Work') }}</a></li>
            <li class="nav-item"><a href="{{ url_for('main.work_add') }}">{{ _('Add Work') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.work_add_month') }}">{{ _('Generate Work Month') }}</a></li>
          </ul>
      </li>
      <li class="dropdown">
@@ -44,6 +45,7 @@
          <ul class="dropdown-menu">
            <li class="nav-item"><a href="{{ url_for('main.oncall_list') }}">{{ _('List Oncall') }}</a></li>
            <li class="nav-item"><a href="{{ url_for('main.oncall_add') }}">{{ _('Add Oncall') }}</a></li>
+           <li class="nav-item"><a href="{{ url_for('main.oncall_add_month') }}">{{ _('Generate Oncall Month') }}</a></li>
          </ul>
      </li>
      <li class="dropdown">
@@ -64,7 +66,6 @@
      </li>
 
      <li class="nav-item"><a href="{{ url_for('main.ical_info') }}">{{ _('ICal Info') }}</a></li>
-     <li class="nav-item"><a href="{{ url_for('main.work_add_month') }}">{{ _('Generate Month') }}</a></li>
      <li class="nav-item"><a href="{{ url_for('main.explore') }}">{{ _('Help needed') }}</a></li>
    </ul>
    {% endif %}
