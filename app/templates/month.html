@@ -107,7 +107,7 @@
 
               {% for day in week %}
                 {% if day['week_day'] == 1 %}
-                  <a href="{{ url_for('main.oncall_add', month=selected_month, day=week[0]['display_day']) }}" class="list-group-item">
+                  <a href="{{ url_for('main.oncall_add', month=selected_month, day=week[0]['display_day']) }}" class="list-group-item disabled">
                     {{ _('Week:') }} {{ day['week'] }} {{_('Oncall:')}}
                   </a>
                 {% endif %}
@@ -156,22 +156,24 @@
 
             <td>
 
+
               <div class="list-group dropdown">
                 {% if day['display_day']  %}
                   {% if day['display_day'] == month_info['today_day'] and month_info['selected_month'] == month_info['today_year_month'] %}
-                    {% set active %}active{% endset %}
+                    {% set activeordisabled %}active{% endset %}
+                  {% elif day['week_day'] > 5 %}
+                    {% set activeordisabled %}disabled{% endset %}
                   {% endif %}
-
                   {% if month_info['date_link_to'] == "Work" %}
-                      <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{active}}">
+                      <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{activeordisabled}}">
                         {{ day['display_day'] }}
                       </a>
                   {% elif month_info['date_link_to'] == "Non Working Day" %}
-                    <a href="{{ url_for('main.nwd_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{active}}">
+                    <a href="{{ url_for('main.nwd_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{activeordisabled}}">
                       {{ day['display_day'] }}
                     </a>
                   {% else %}
-                    <a href="{{ url_for('main.absence_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{active}}">
+                    <a href="{{ url_for('main.absence_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{activeordisabled}}">
                       {{ day['display_day'] }}
                     </a>
                   {% endif %}
