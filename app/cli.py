@@ -32,9 +32,12 @@ def register(app):
         #                                   display_day)
         # date_max = "%s-%s-%s 12:31" % (display_year, display_month,
         #                                   display_day)
+        dt_start = datetime.strptime(start, "%Y-%m-%d %H:%M")
+        dt_stop = datetime.strptime(stop, "%Y-%m-%d %H:%M")
 
-        work = Work.query.filter(func.datetime(Work.start) > start,
-                                 func.datetime(Work.stop) < stop).all()
+        work = Work.query.filter((Work.start > dt_start)
+                                 & (Work.stop < dt_stop)
+                                 ).all()
 
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
@@ -70,6 +73,8 @@ def register(app):
                                                 o.service, o.user.username)
             pprint(rocket.chat_post_message(msg, channel=current_app.
                                             config['ROCKET_CHANNEL']).json())
+            pprint(rocket.chat_post_message(msg, channel=o.user.username).json())
+
             time.sleep(1)
 
     @chat.command()
@@ -77,19 +82,10 @@ def register(app):
         """send who works today."""
 
         dt_today = datetime.utcnow()
-        now_day = '{:02d}'.format(dt_today.day)
-        now_month = '{:02d}'.format(dt_today.month)
-
-        date_min = "%s-%s-%s 00:00:00" % (dt_today.year, now_month, now_day)
-
-        print("looking for help needed after: {}".format(date_min))
+        print("looking for help needed after: {}".format(dt_today))
         work = Work.query.filter((Work.status != "assigned")
-                                 & (func.datetime(Work.start) > date_min)
+                                 & (Work.start > dt_today)
                                  ).order_by(Work.start)
-
-        # rocket = RocketChat(current_app.config['ROCKET_USER'],
-        #                     current_app.config['ROCKET_PASS'],
-        #                     server_url=current_app.config['ROCKET_URL'])
 
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
@@ -116,7 +112,7 @@ def register(app):
             elif w.status == "wants-out":
                 msg = 'Hey team @all please find it in your heart to help @{} with this shift\n{}\t{}\t*{}*\t{}'.format(w.user.username,
                                 w.start,
-                                  w.stop,
+                                w.stop,
                                   w.status,
                                   w.service.name)
 

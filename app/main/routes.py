@@ -958,8 +958,12 @@ def work_edit():
     form = WorkForm(formdata=request.form, obj=work)
 
     if request.method == 'POST' and form.validate_on_submit():
-        string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                             work.service, work.user.username)
+        if work.user is None:
+            string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
+                                                 work.service, _("none"))
+        else:
+            string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
+                                                 work.service, work.user.username)
         service = Service.query.filter_by(name=form.service.data).first()
 
         if current_app.config['ENFORCE_ROLES'] is True:
@@ -1362,8 +1366,14 @@ def oncall_edit():
                 flash(_('Edit oncall, other than requesting wants/needs out, is only available to admins / service managers'))
                 return redirect(url_for('main.index'))
 
-        string_from = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
-                                             oncall.service, oncall.user.username)
+        if oncall.user is None:
+            string_from = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
+                                                 oncall.service, _("none"))
+        else:
+            string_from = '%s\t%s\t%s\t@%s\n' % (oncall.start, oncall.stop,
+                                                 oncall.service, oncall.user.username)
+
+        oncall.status = form.status.data
         oncall.start = form.start.data
         oncall.stop = form.stop.data
         oncall.user_id = form.user.data
