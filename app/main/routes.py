@@ -996,11 +996,12 @@ def work_edit():
 
         if current_app.config['ROCKET_ENABLED']:
             if work.user is not None:
-                string_to = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                                   work.service, work.user.username)
+                string_to = '%s\t%s\t%s\t@%s\t%s\n' % (work.start, work.stop,
+                                                       work.service, work.user.username,
+                                                       work.status)
             else:
-                string_to = '%s\t%s\t%s\t%s\n' % (work.start, work.stop,
-                                                  work.service, "none")
+                string_to = '%s\t%s\t%s\t%s\t%s\n' % (work.start, work.stop,
+                                                      work.service, "none", work.status)
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
                                 server_url=current_app.config['ROCKET_URL'])
