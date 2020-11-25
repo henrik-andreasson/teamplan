@@ -761,7 +761,6 @@ def users_stats_oncall(month, service):
 
         last_oncall = dt_measure_start
         for oc in oncall_list:
-#            print("stats oncall, checking {} vs {}".format(last_oncall, oc.stop))
             if last_oncall < oc.stop:
                 last_oncall = oc.stop
             number_of_oncalls += 1
@@ -996,8 +995,12 @@ def work_edit():
         flash(_('Your changes have been saved.'))
 
         if current_app.config['ROCKET_ENABLED']:
-            string_to = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                               work.service, work.user.username)
+            if work.user is not None:
+                string_to = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
+                                                   work.service, work.user.username)
+            else:
+                string_to = '%s\t%s\t%s\t%s\n' % (work.start, work.stop,
+                                                  work.service, "none")
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
                                 server_url=current_app.config['ROCKET_URL'])
@@ -1083,10 +1086,13 @@ def work_delete():
     if work is None:
         flash(_('Work was not deleted, id not found!'))
         return redirect(url_for('main.index'))
+    if work.user is not None:
+        deleted_msg = 'Work deleted: %s\t%s\t%s\t@%s\n' % (work.start, work.stop,
+                                                           work.service.name, work.user.username)
+    else:
+        deleted_msg = 'Work deleted: %s\t%s\t%s\t%s\n' % (work.start, work.stop,
+                                                          work.service, "none")
 
-    deleted_msg = 'Work deleted: %s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                                       work.service.name,
-                                                       work.user.username)
     if current_app.config['ROCKET_ENABLED']:
         rocket = RocketChat(current_app.config['ROCKET_USER'],
                             current_app.config['ROCKET_PASS'],
@@ -1381,7 +1387,7 @@ def oncall_edit():
         db.session.commit()
 
         if form.absenceday.data != 0:
-            #TODO: add link to absence from oncall and update via that, this creates a duplicate off day ...
+            # TODO: add link to absence from oncall and update via that, this creates a duplicate off day ...
             dt_absence_start = form.start.data + timedelta(days=-form.start.data.weekday() + form.absenceday.data - 1, weeks=1, hours=-form.start.data.hour + 8)
             dt_absence_stop = form.start.data + timedelta(days=-form.start.data.weekday() + form.absenceday.data - 1, weeks=1, hours=-form.start.data.hour + 17)
 
@@ -1515,7 +1521,7 @@ def oncall_add_month():
             except ValueError:
                 continue
             if weekday == calendar.MONDAY:
-                #TODO: make the oncall start day configurable
+                # TODO: make the oncall start day configurable
                 oncall_start = "%d-%02d-%02d %s:%s" % (selected_month.year, selected_month.month, i, "08", "00")
                 dt_oncall_start = datetime.strptime(oncall_start, "%Y-%m-%d %H:%M")
                 dt_oncall_stop = dt_oncall_start + relativedelta.relativedelta(days=7)
