@@ -1,0 +1,10 @@
+#user,pass,email,comment,role-todo
+sam,foo123,sam@example.org,"stuff"
+pete,foo123,pete@example.org,"stuff"
+dave,foo123,dave@example.org,"stuff"
+ann,foo123,ann@example.org,"stuff"
+martha,foo123,martha@example.org,"stuff"
+jim,foo123,jim@example.org,"stuff"
+sue,foo123,sue@example.org,"stuff"
+hank,foo123,hank@example.org,"stuff"
+mary,foo123,mary@example.org,"stuff"

@@ -31,8 +31,8 @@ get_new_token() {
   else
     apiserverurl="${API_URL}"
   fi
-
-  token=$(http --verify cacerts.pem --auth "$username:$password" POST "${apiserverurl}/tokens" | jq ".token" | sed 's/\"//g')
+#--verify cacerts.pem
+  token=$(http  --auth "$username:$password" POST "${apiserverurl}/tokens" | jq ".token" | sed 's/\"//g')
   if [ "x${token}" != "x" ] ; then
     echo "${token}" > .token
     echo "Got fresh token ${token}" >&2

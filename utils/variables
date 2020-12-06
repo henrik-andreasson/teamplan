@@ -1,3 +1,3 @@
 export API_URL="http://localhost:5000/api"
-export API_USER=han
-export API_PASS=foo123
+export API_USER=admin
+export API_PASS=admin

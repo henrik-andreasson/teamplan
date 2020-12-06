@@ -1,39 +1,46 @@
 #!/bin/bash
 
-# uses httpie  - pip3 install httpie
+if [ -f variables ] ; then
+  . variables
+  echo "URL: ${API_URL}"
+  echo "User: ${API_USER}"
 
-read -p "username > " user_name
-read -p "password > " pass_word
-read -p "service > " service
+fi
+
+token=""
+if [ -f rest-get-token.sh ] ; then
+  . rest-get-token.sh
+  token=$(get_new_token)
+  if [ $? -ne 0 ] ; then
+    echo "failed to get a login token"
+    exit
+  fi
+else
+  echo "login/get token failed"
+  exit
+fi
 
 if [ "x$1" != "x" ] ; then
-    days=$1
+    csvfile=$1
 else
-    echo "arg1 must be a file with days"
-    exit
-fi
-
-if [ "x$2" != "x" ] ; then
-    users=$2
-else
-    echo "arg2 must be a file with users"
+    echo "arg1 must be a file with location definitions in it"
+    echo "username,servicename"
     exit
 fi
 
 
-token=$(http --auth "$user_name:$pass_word" POST http://localhost:5000/api/tokens | jq ".token")
+for row in $(cat $csvfile) ; do
+  echo "row: $row"
+  date=$(echo $row | cut -f1 -d\,)
+  starttime=$(echo $row | cut -f2 -d\,)
+  stoptime=$(echo $row | cut -f3 -d\,)
+  username=$(echo $row | cut -f4 -d\,)
+  servicename=$(echo $row | cut -f5 -d\,)
 
-
-for day in $(cat $days) ; do
-
-  work_user=$(shuf -n1 "$service-users.txt")
-  http --verbose POST http://localhost:5000/api/work service=$service \
-    start="$day 08:00" stop="$day 12:30" username="$work_user" \
+  http  --verbose POST "${API_URL}/work" service_name="$servicename" \
+    start="$date $starttime" stop="$date $stoptime" status="assigned" user_name="$username" \
      "Authorization:Bearer $token"
 
-  work_user=$(shuf -n1 "$service-users.txt")
-  http --verbose POST http://localhost:5000/api/work service=$service \
-    start="$day 12:30" stop="$day 17:00" username="$work_user" \
-    "Authorization:Bearer $token"
+#  sleep 1
 
 done
