@@ -50,6 +50,8 @@ def ical():
 
     date_min = prev_month.strftime("%Y-%m-%d 00:00:00")
     date_max = next_month.strftime("%Y-%m-%d 23:59:00")
+    dt_start = datetime.strptime(date_min, "%Y-%m-%d %H:%M:%S")
+    dt_stop = datetime.strptime(date_max, "%Y-%m-%d %H:%M:%S")
 
     print("search range: %s->%s" % (date_min, date_max))
 
@@ -62,48 +64,48 @@ def ical():
         s = Service.query.filter_by(name=service).first()
 
     if s is not None:
-        work = Work.query.filter(Work.service_id == s.name,
-                                 func.datetime(Work.start) > date_min,
-                                 func.datetime(Work.start) < date_max
+        work = Work.query.filter((Work.service_id == s.name)
+                                 & (Work.start > dt_start)
+                                 & (Work.start < dt_stop)
                                  ).order_by(Work.service_id)
 
         oncall = Oncall.query.filter(
          (Oncall.service_id == s.id)
-         & (func.datetime(Oncall.start) > date_min)
-         & (func.datetime(Oncall.start) < date_max)
+         & (Oncall.start > dt_start)
+         & (Oncall.start < dt_stop)
          ).order_by(Oncall.service_id)
 
-        absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
-                                       func.datetime(Absence.stop) < date_max
+        absence = Absence.query.filter((Absence.start > dt_start)
+                                       & (Absence.stop < dt_stop)
                                        ).all()
 
     elif u is not None:
         work = Work.query.filter((Work.user_id == u.id)
-                                 & (func.datetime(Work.start) > date_min)
-                                 & (func.datetime(Work.start) < date_max)
+                                 & (Work.start > dt_start)
+                                 & (Work.start < dt_stop)
                                  ).order_by(Work.service_id)
 
-        oncall = Oncall.query.filter((Oncall.user_id == u.id) &
-                                     (func.datetime(Oncall.start) > date_min ) &
-                                     (func.datetime(Oncall.start) < date_max )
+        oncall = Oncall.query.filter((Oncall.user_id == u.id)
+                                     & (Oncall.start > dt_start)
+                                     & (Oncall.start < dt_stop)
                                      ).order_by(Oncall.service_id)
 
-        absence = Absence.query.filter((Absence.user_id == u.id) &
-                                       (func.datetime(Absence.start) > date_min) &
-                                       (func.datetime(Absence.stop) < date_max)
+        absence = Absence.query.filter((Absence.user_id == u.id)
+                                       & (Absence.start > dt_start)
+                                       & (Absence.stop < dt_stop)
                                        ).all()
 
     else:
-        work = Work.query.filter(func.datetime(Work.start) > date_min,
-                                 func.datetime(Work.start) < date_max
+        work = Work.query.filter((Work.start > dt_start)
+                                 & (Work.start < dt_stop)
                                  ).order_by(Work.service_id)
 
-        oncall = Oncall.query.filter((func.datetime(Oncall.start) > date_min) &
-                                     (func.datetime(Oncall.start) < date_max)
+        oncall = Oncall.query.filter((Oncall.start > dt_start)
+                                     & (Oncall.start < dt_start)
                                      ).order_by(Oncall.service_id)
 
-        absence = Absence.query.filter(func.datetime(Absence.start) > date_min,
-                                       func.datetime(Absence.stop) < date_max
+        absence = Absence.query.filter((Absence.start > dt_start)
+                                       & (Absence.stop < dt_stop)
                                        ).all()
 
     reminderHours = current_app.config['ICAL_REMINDER_MINS']
@@ -116,9 +118,11 @@ def ical():
     utc = pytz.utc
 
     for w in work:
-        user = User.query.get(w.user.id)
+
         event = Event()
-        event.add('summary', "%s@%s" % (w.user.username, w.service.name))
+        if w.user is not None:
+            user = User.query.get(w.user.id)
+            event.add('summary', "%s@%s" % (w.user.username, w.service.name))
 
         event.add('dtstart', local_tz.localize(w.start).astimezone(utc))
         event.add('dtend', local_tz.localize(w.stop).astimezone(utc))
@@ -128,7 +132,8 @@ def ical():
         event['organizer'] = organizer
 
         attendee = vCalAddress('MAILTO:%s' % user.email)
-        attendee.params['cn'] = vText(w.user.username)
+        if w.user is not None:
+            attendee.params['cn'] = vText(w.user.username)
         attendee.params['ROLE'] = vText('REQ-PARTICIPANT')
         event.add('attendee', attendee, encode=0)
 
