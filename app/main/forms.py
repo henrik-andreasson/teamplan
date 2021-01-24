@@ -108,7 +108,7 @@ class AbsenceForm(FlaskForm):
 
 class OncallForm(FlaskForm):
     user = SelectField(_l('Username'), coerce=int)
-    service = SelectField(_l('service'), validators=[DataRequired()])
+    service = SelectField(_l('service'), coerce=int, validators=[DataRequired()])
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned'),
                                                 ('wants-out', 'Wants out'),

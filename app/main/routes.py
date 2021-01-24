@@ -954,7 +954,7 @@ def work_edit():
     if work is None:
         render_template('service.html', title=_('Work is not defined'))
 
-    form = WorkForm(formdata=request.form, obj=work)
+    form = WorkForm(obj=work)
 
     if request.method == 'POST' and form.validate_on_submit():
         if work.user is None:
@@ -1015,6 +1015,8 @@ def work_edit():
     else:
         form.service.data = work.service_id
         form.user.data = work.user_id
+# TODO: check id user if absent
+        form.user.choices = [(su.id, su.username) for su in work.service.users]
 
         return render_template('index.html', title=_('Edit Work'),
                                form=form)
@@ -1364,7 +1366,7 @@ def oncall_edit():
     if 'delete' in request.form:
         return redirect(url_for('main.oncall_delete', oncall=oncallid))
 
-    form = OncallForm(formdata=request.form, obj=oncall)
+    form = OncallForm(obj=oncall)
     if request.method == 'POST' and form.validate_on_submit():
 
         if current_app.config['ENFORCE_ROLES'] is True:

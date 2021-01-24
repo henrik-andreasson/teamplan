@@ -1,10 +1,8 @@
 site_name: Teamplan
 nav:
     - Home: index.md
-    - Demo: demo.md
-    - Running: running.md
+#    - Demo: demo.md
     - Getting Started: getting-started.md
-    - Modules: modules.md
     - REST API: rest-api.md
 
 theme: material

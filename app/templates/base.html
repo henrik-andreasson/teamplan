@@ -100,7 +100,32 @@
             {% endfor %}
         {% endif %}
         {% endwith %}
-        <h1> {% if title %} {{ title }} {% else %}{{ _('Welcome to Team Plan') }}{% endif %}</h1>
+
+        <div class="row">
+          <div class="col-sm-4">
+            <p class="center">
+              <a href="{{ url_for('main.index') }}" class="navbar-brand">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="logo simplex" />
+              </a>
+            </p>
+          </div>
+          <div class="col-sm-4">
+            <p class="text-center">
+              <h1 class="text-center"> {% if title %} {{ title }} {% else %}{{ _('Welcome to Team Plan') }}{% endif %}</h1>
+
+            </p>
+          </div>
+          <div class="col-sm-4">
+            <p class="text-right">
+               <!--
+TODO: Add shortcuts here
+
+               </a> -->
+            </p>
+          </div>
+
+        </div>
+
         {# application content needs to be provided in the app_content block #}
         {% block app_content %}{% endblock %}
     </div>

@@ -10,7 +10,7 @@ from app.api.auth import token_auth
 from pprint import pprint
 from rocketchat_API.rocketchat import RocketChat
 
-# TODO: check role = admin ...
+# TODO: check role = admin ...  
 @bp.route('/service', methods=['POST'])
 @token_auth.login_required
 def create_service():
@@ -39,7 +39,7 @@ def create_service():
 def get_servicelist():
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 10, type=int), 100)
-    data = Service.to_collection_dict(Service.query, page, per_page, 'api.get_service')
+    data = Service.to_collection_dict(Service.query, page, per_page, 'api.get_servicelist')
     return jsonify(data)
 
 
