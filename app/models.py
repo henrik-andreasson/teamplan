@@ -256,15 +256,16 @@ class Work(PaginatedAPIMixin, db.Model):
             self.service_id = service.id
             self.color = service.color
 
-        if 'user_id' in data:
-            user = User.query.get(data['user_id'])
-        elif 'user_name' in data:
-            user = User.query.filter_by(username=data['user_name']).first()
-        else:
-            return {'msg': "no input for user id or name", 'success': False}
+        if data['status'] != "unassigned":
+            if 'user_id' in data:
+                user = User.query.get(data['user_id'])
+            elif 'user_name' in data:
+                user = User.query.filter_by(username=data['user_name']).first()
+            else:
+                return {'msg': "no input for user id or name", 'success': False}
 
-        if user is not None:
-            self.user_id = user.id
+            if user is not None:
+                self.user_id = user.id
 
         return {'msg': "work created", 'success': True}
 
