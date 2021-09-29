@@ -362,6 +362,155 @@ def index():
                            labels=bar_labels, values=bar_values)
 
 
+@bp.route('/plan_month', methods=['GET', 'POST'])
+@login_required
+def plan_month():
+    output_month = []
+
+    users = User.query.order_by(User.username)
+    services = Service.query.order_by(Service.name)
+    showabsence = request.args.get('absence')
+    month = request.args.get('month')
+
+    form = FilterUserServiceForm()
+
+    service_id = None
+    user_id = None
+
+    if month is not None:
+        selected_month = datetime.strptime(month, "%Y-%m")
+        session['selected_month'] = month
+    elif 'selected_month' in session:
+        month = session['selected_month']
+        selected_month = datetime.strptime(month, "%Y-%m")
+    else:
+        selected_month = datetime.utcnow()
+
+    showabsence = None
+    if request.method == 'POST' and form.validate_on_submit():
+        service_id = form.service.data
+        user_id = form.user.data
+        if form.showabsence.data is True:
+            showabsence = "show"
+            session['showabsence'] = "show"
+        else:
+            showabsence = None
+            session['showabsence'] = None
+
+    if 'showabsence' in session:
+        showabsence = session['showabsence']
+
+    service_obj = None
+    if service_id is not None:
+        service_obj = Service.query.get(service_id)
+
+    if service_obj is None:
+        service = None
+    else:
+        service = service_obj.name
+        print("service: %s id: %s" % (service, service_obj.id))
+
+    user = None
+    if user_id is not None:
+        user = User.query.get(user_id)
+
+    if user is None:
+        username = None
+    else:
+        username = user.username
+        print("user: %s id: %s" % (username, user.id))
+
+    next_month = selected_month + relativedelta.relativedelta(months=1)
+    prev_month = selected_month + relativedelta.relativedelta(months=-1)
+
+    calendar = Calendar().monthdayscalendar(selected_month.year,
+                                            selected_month.month)
+    display_month = '{:02d}'.format(selected_month.month)
+    display_year = '{:02d}'.format(selected_month.year)
+
+    working_days = [0, 1, 2, 3, 4, 5]
+
+    mon_week = 0
+    for week in calendar:
+        mon_week = mon_week + 1
+        output_week = []
+        weekday = 0
+        for day in week:
+            weekday = weekday + 1
+            if weekday not in working_days:
+                continue
+
+            day_info = {}
+
+# id day is zero the month has not started, ie the 1:st of the month may be a
+# Wednesday then monday and tuseday is 0
+            if day != 0:
+
+                display_day = '{:02d}'.format(day)
+                day_info = {'display_day': display_day, 'week_day': weekday}
+
+                date_min = "%s-%s-%s 00:00:00" % (display_year, display_month,
+                                                  display_day)
+                date_max = "%s-%s-%s 23:59:00" % (display_year, display_month,
+                                                  display_day)
+                dt_start = datetime.strptime(date_min, "%Y-%m-%d %H:%M:%S")
+                dt_stop = datetime.strptime(date_max, "%Y-%m-%d %H:%M:%S")
+
+                users = []
+                if service_obj is not None:
+                    for su in service_obj.users:
+                        user_info = {}
+                        user_info['user'] = su
+                        work = Work.query.filter(((Work.user_id == su.id)
+                                                  & (Work.start > dt_start)
+                                                  & (Work.stop < dt_stop)
+                                                  )).with_entities(func.count()).scalar()
+
+                        user_info['work_today'] = work
+
+                        print(f'userinfo: {user_info["user"].username}')
+                        user_info['absence'] = Absence.query.filter((Absence.user_id == su.id)
+                                                                    & ((Absence.start > dt_start) & (Absence.start < dt_stop)
+                                                                       | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
+                                                                       | (Absence.start < dt_start) & (Absence.stop > dt_stop)
+                                                                       )
+                                                                    ).with_entities(func.count()).scalar()
+                        print(f'userinfo: absence: {user_info["absence"]}')
+
+                        users.append(user_info)
+
+                week_date = date(selected_month.year,
+                                 selected_month.month, day)
+                day_info['week'] = week_date.isocalendar()[1]
+                day_info['users'] = users
+            output_week.insert(weekday, day_info)
+
+        output_month.insert(mon_week, output_week)
+
+    month_str = selected_month.strftime("%Y-%m")
+    month_info = {}
+    month_info['selected_month'] = month_str
+    month_info['selected_service'] = service
+    month_info['selected_user'] = username
+    month_info['showabsence'] = showabsence
+    month_info['prev'] = prev_month.strftime("%b")
+    month_info['this'] = selected_month.strftime("%Y %B")
+    month_info['next'] = next_month.strftime("%b")
+    month_info['today_day'] = date.today().strftime("%d")
+    month_info['today_year_month'] = date.today().strftime("%Y-%m")
+    month_info['date_link_to'] = current_app.config['DATE_LINK_TO']
+    next_url = url_for('main.index', month=next_month.strftime("%Y-%m"))
+    prev_url = url_for('main.index', month=prev_month.strftime("%Y-%m"))
+
+    return render_template('plan.html', title=_('Month'), month=output_month,
+                           users=users, services=services,
+                           month_info=month_info, next_url=next_url,
+                           prev_url=prev_url, selected_month=month_str,
+                           form=form,
+                           absence_color=current_app.config['ABSENCE_COLOR'],
+                           nwd_color=current_app.config['NON_WORKING_DAYS_COLOR'])
+
+
 @bp.route('/explore')
 @login_required
 def explore():
@@ -627,6 +776,23 @@ def work_add():
 
             form.start.data = datetime.strptime(date_start_str, "%Y-%m-%d %H:%M")
             form.stop.data = datetime.strptime(date_stop_str, "%Y-%m-%d %H:%M")
+
+        start = request.args.get('start')
+        if start is not None:
+            form.start.data = datetime.strptime(start, "%Y-%m-%d %H:%M")
+
+        stop = request.args.get('stop')
+        if stop is not None:
+            form.stop.data = datetime.strptime(stop, "%Y-%m-%d %H:%M")
+
+        xxuser = request.args.get('user')
+        print(f'get-select-user: {xxuser}')
+        if xxuser is not None:
+            form.user.data = xxuser
+
+        service = request.args.get('service')
+        if service is not None:
+            form.service.data = service
 
         # TODO figure out how to show work added by the current user this session
         return render_template('work.html', title=_('Add Work'),
