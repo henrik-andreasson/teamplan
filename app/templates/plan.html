@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span>
+                    {{ _('Previous Month') }} {{ month_info['prev'] }}
+                </a>
+            </li>
+            <li>
+              <span aria-hidden="true">
+                {{ month_info['this'] }}
+               </span>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    {{ _('Next Month') }} {{ month_info['next'] }}
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+
+    <table class="table table-hover">
+      <tr>
+        <td>  {{ _('Week no / Oncall') }} </td>
+        <td>  {{ _('Monday') }} </td>
+        <td>  {{ _('Tuesday') }}  </td>
+        <td>  {{ _('Wednesday') }}  </td>
+        <td>  {{ _('Thursday') }} </td>
+        <td>  {{ _('Friday') }} </td>
+        <td>  {{ _('Saturday') }} </td>
+        <td>  {{ _('Sunday') }} </td>
+      </tr>
+
+      {% for week in month %}
+        <tr>
+
+<!-- week number + on call -->
+          <td>
+            <div class="list-group">
+
+              {% for day in week %}
+                {% if day['week_day'] == 1 %}
+                  <a href="{{ url_for('main.oncall_add', month=selected_month, day=week[0]['display_day']) }}" class="list-group-item disabled">
+                    {{ _('Week:') }} {{ day['week'] }} {{_('Oncall:')}}
+                  </a>
+                {% endif %}
+
+
+              {% endfor %}
+
+          </td>
+
+
+<!--  work  -->
+
+          {% for day in week %}
+
+            <td>
+
+
+              <div class="list-group dropdown">
+                {% if day['display_day']  %}
+                  {% if day['display_day'] == month_info['today_day'] and month_info['selected_month'] == month_info['today_year_month'] %}
+                    {% set activeordisabled %}active{% endset %}
+                  {% elif day['week_day'] > 5 %}
+                    {% set activeordisabled %}disabled{% endset %}
+                  {% endif %}
+                  {% if month_info['date_link_to'] == "Work" %}
+                      <a href="{{ url_for('main.work_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{activeordisabled}}">
+                        {{ day['display_day'] }}
+                      </a>
+                  {% elif month_info['date_link_to'] == "Non Working Day" %}
+                    <a href="{{ url_for('main.nwd_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{activeordisabled}}">
+                      {{ day['display_day'] }}
+                    </a>
+                  {% else %}
+                    <a href="{{ url_for('main.absence_add', day=day['display_day'], month=selected_month) }}" class="list-group-item {{activeordisabled}}">
+                      {{ day['display_day'] }}
+                    </a>
+                  {% endif %}
+                {% endif %}
+
+              {% for u in day['users'] %}
+
+                {% set u_user %}{{u['user'].username}}{% endset %}
+                {% set u_work %}{{u['work_today']}}{% endset %}
+                {% set u_absence %}{{u['absence']}}{% endset %}
+                {% set today_fm_start %}{{month_info['today_year_month']}}-{{day['display_day']}} 08:00{% endset %}
+                {% set today_fm_stop %}{{month_info['today_year_month']}}-{{day['display_day']}} 12:30{% endset %}
+                {% set today_em_start %}{{month_info['today_year_month']}}-{{day['display_day']}} 12:30{% endset %}
+                {% set today_em_stop %}{{month_info['today_year_month']}}-{{day['display_day']}} 17:00{% endset %}
+
+                {% if u_absence != "0" %}
+                    {% set color %}#999999{% endset %}
+                {% elif u_work == "0" %}
+                  {% set color %}#00ff99{% endset %}
+                {% elif u_work == "1" %}
+                  {% set color %}#FFFF66{% endset %}
+                {% elif u_work == "2" %}
+                  {% set color %}#ff5050{% endset %}
+                {% else %}
+                    {% set color %}#e6e6e6{% endset %}
+                {% endif %}
+
+
+                <a href="{{ url_for('main.work_add', user=u['user'].id,start=today_fm_start,stop=today_fm_stop) }}" style="background: {{color}}" class="list-group-item">
+                  <div class="text-nowrap">
+                    <h4 class="list-group-item-heading"  id="text-nowrap">{{ _('Add work: <b>fm</b> <br>%(username)s <br>work: [%(work)s] absence: [%(absence)s]',
+                  username=u["user"].username, work=u_work, absence=u_absence) }} </h4>
+                  </div>
+                </a>
+
+                <a href="{{ url_for('main.work_add', user=u['user'].id,start=today_em_start,stop=today_em_stop) }}" style="background: {{color}}" class="list-group-item">
+                  <div class="text-nowrap">
+                    <h4 class="list-group-item-heading"  id="text-nowrap">{{ _('Add work: <b>em</b> <br>%(username)s <br>work: [%(work)s] absence: [%(absence)s]',
+                  username=u["user"].username, work=u_work, absence=u_absence) }} </h4>
+                  </div>
+                </a>
+
+
+              {% endfor %}
+
+<!-- non working days -->
+              {% for nwd in day['nwd'] %}
+
+              {% set nwd_start %}
+                    {{ nwd.start.strftime("(%H:%M)") }}
+              {% endset %}
+              {% set nwd_stop %}
+                    {{ nwd.stop.strftime("(%H:%M)") }}
+              {% endset %}
+
+
+              <a href="{{ url_for('main.nonworkingdays_edit', nwd=nwd.id) }}" class="list-group-item" style="background: {{nwd_color}}">
+                <div class="text-nowrap"><h4 class="text-nowrap" id="text-nowrap">{{ _('%(name)s', name=nwd.name) }}</h4></div>
+                <div class="text-nowrap"><p class="list-group-item-text  id="text-nowrap"">{{ _('%(start)s - %(stop)s', start=nwd_start, stop=nwd_stop) }}</p></div>
+
+              </a>
+
+
+              {% endfor %}
+
+            </div>
+
+            </td>
+          {% endfor %}
+
+      </tr>
+      {% endfor %}
+    </table>
+
+
+    {% if form %}
+    <table class="table table-hover">
+      <tr>
+        <td>
+        {{ wtf.quick_form(form) }}
+        <br>
+        </td>
+      </tr>
+    </table>
+    {% endif %}
+
+
+
+    <canvas id="chart" width="800" height="700"></canvas>
+
+
+{% endblock %}

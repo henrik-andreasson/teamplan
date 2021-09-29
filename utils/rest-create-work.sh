@@ -37,9 +37,17 @@ for row in $(cat $csvfile) ; do
   username=$(echo $row | cut -f4 -d\,)
   servicename=$(echo $row | cut -f5 -d\,)
 
-  http  --verbose POST "${API_URL}/work" service_name="$servicename" \
-    start="$date $starttime" stop="$date $stoptime" status="assigned" user_name="$username" \
-     "Authorization:Bearer $token"
+  if [ "x$username" == "xunassigned" ] ; then
+
+    http  --verbose POST "${API_URL}/work" service_name="$servicename" \
+      start="$date $starttime" stop="$date $stoptime" status="unassigned" \
+      "Authorization:Bearer $token"
+  else
+    http  --verbose POST "${API_URL}/work" service_name="$servicename" \
+      start="$date $starttime" stop="$date $stoptime" status="assigned" user_name="$username" \
+      "Authorization:Bearer $token"
+  fi
+
 
 #  sleep 1
 
