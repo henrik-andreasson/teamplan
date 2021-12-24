@@ -1,0 +1,5 @@
+div.required label:after {
+    content: " *";
+    color: red;
+}
+body { background: #b3b3ff !important;}

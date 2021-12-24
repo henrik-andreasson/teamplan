@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, \
     SelectMultipleField, BooleanField
-from wtforms.fields.html5 import DateTimeField
+from wtforms.fields import DateTimeField
 from wtforms.validators import ValidationError, DataRequired, Length
 from flask_babel import _, lazy_gettext as _l
 from app.models import User, Service
@@ -16,9 +16,11 @@ class FilterUserServiceForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
+        self.service.choices = [(s.id, s.name)
+                                for s in Service.query.order_by(Service.name).all()]
         self.service.choices.insert(0, (-1, _l('All')))
-        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.user.choices = [(u.id, u.username)
+                             for u in User.query.order_by(User.username).all()]
         self.user.choices.insert(0, (-1, _l('All')))
 
 
@@ -43,21 +45,26 @@ class EditProfileForm(FlaskForm):
 class ServiceForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()])
     color = StringField(_l('color'), validators=[DataRequired()])
-    users = SelectMultipleField(_l('Users'), coerce=int, render_kw={"size": 20})
-    manager = SelectField(_l('Manager'), validators=[DataRequired()], coerce=int)
+    users = SelectMultipleField(
+        _l('Users'), coerce=int, render_kw={"size": 20})
+    manager = SelectField(_l('Manager'), validators=[
+                          DataRequired()], coerce=int)
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
     delete = SubmitField(_l('Delete'))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.users.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
-        self.manager.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.users.choices = [(u.id, u.username)
+                              for u in User.query.order_by(User.username).all()]
+        self.manager.choices = [(u.id, u.username)
+                                for u in User.query.order_by(User.username).all()]
 
 
 class WorkForm(FlaskForm):
     user = SelectField(_l('Username'), coerce=int)
-    service = SelectField(_l('service'), validators=[DataRequired()], coerce=int)
+    service = SelectField(_l('service'), validators=[
+                          DataRequired()], coerce=int)
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned'),
                                                 ('wants-out', 'Wants out'),
@@ -73,8 +80,10 @@ class WorkForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
-        self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
+        self.user.choices = [(u.id, u.username)
+                             for u in User.query.order_by(User.username).all()]
+        self.service.choices = [(s.id, s.name)
+                                for s in Service.query.order_by(Service.name).all()]
 
 
 class GenrateMonthWorkForm(FlaskForm):
@@ -103,12 +112,14 @@ class AbsenceForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
+        self.user.choices = [(u.id, u.username)
+                             for u in User.query.order_by(User.username).all()]
 
 
 class OncallForm(FlaskForm):
     user = SelectField(_l('Username'), coerce=int)
-    service = SelectField(_l('service'), coerce=int, validators=[DataRequired()])
+    service = SelectField(_l('service'), coerce=int,
+                          validators=[DataRequired()])
     status = SelectField(_l('Status'), choices=[('assigned', 'Assigned'),
                                                 ('unassigned', 'Unassigned'),
                                                 ('wants-out', 'Wants out'),
@@ -132,8 +143,10 @@ class OncallForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user.choices = [(u.id, u.username) for u in User.query.order_by(User.username).all()]
-        self.service.choices = [(s.id, s.name) for s in Service.query.order_by(Service.name).all()]
+        self.user.choices = [(u.id, u.username)
+                             for u in User.query.order_by(User.username).all()]
+        self.service.choices = [(s.id, s.name)
+                                for s in Service.query.order_by(Service.name).all()]
 
 
 class GenrateMonthOncallForm(FlaskForm):

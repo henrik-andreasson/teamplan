@@ -57,3 +57,47 @@ class ChangePasswordForm(FlaskForm):
     password2 = PasswordField(_l('Repeat Password'),
                               validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField(_l('Change Password'))
+
+
+class AdminChangePasswordForm(FlaskForm):
+    username = SelectField(_l('User'), coerce=int)
+    password = PasswordField(_l('Password'), validators=[DataRequired()])
+    password2 = PasswordField(_l('Repeat Password'),
+                              validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField(_l('Change Password'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.username.choices = [(u.id, u.username)
+                                 for u in User.query.order_by(User.username).all()]
+        self.username.choices.insert(0, (-1, _l('- Select -')))
+
+
+class AdminSelecteUserForm(FlaskForm):
+    username = SelectField(_l('User'), coerce=int)
+    submit = SubmitField(_l('Select'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.username.choices = [(u.id, u.username)
+                                 for u in User.query.order_by(User.username).all()]
+        self.username.choices.insert(0, (-1, _l('- Select -')))
+
+
+class AdminUpdateUserForm(FlaskForm):
+    username = SelectField(_l('User'), coerce=int)
+    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
+    manual_schedule = SelectField(_l('Manually Schedule'),
+                                  choices=[('1', 'Yes'), (0, 'No')],
+                                  coerce=int, default=0)
+    work_percent = StringField(_l('Work Percent'), default=100)
+    role = SelectField(_l('Role'), choices=[('user', 'User'),
+                                            ('admin', 'Admin')])
+
+    submit = SubmitField(_l('Register'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.username.choices = [(u.id, u.username)
+                                 for u in User.query.order_by(User.username).all()]
+        self.username.choices.insert(0, (-1, _l('- Select -')))

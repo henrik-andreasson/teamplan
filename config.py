@@ -23,7 +23,8 @@ class Config(object):
     ROCKET_PASS = os.environ.get('ROCKET_PASS') or 'foo123'
     ROCKET_URL = os.environ.get('ROCKET_URL') or 'http://172.17.0.4:3000'
     ROCKET_CHANNEL = os.environ.get('ROCKET_CHANNEL') or 'GENERAL'
-    NON_WORKING_DAYS_COLOR = os.environ.get('NON_WORKING_DAYS_COLOR') or "#FF2222"
+    NON_WORKING_DAYS_COLOR = os.environ.get(
+        'NON_WORKING_DAYS_COLOR') or "#FF2222"
     ABSENCE_COLOR = os.environ.get('ABSENCE_COLOR') or "#AAAAAA"
     OPEN_REGISTRATION = os.environ.get('OPEN_REGISTRATION') or False
     ENFORCE_ROLES = os.environ.get('ENFORCE_ROLES') or True

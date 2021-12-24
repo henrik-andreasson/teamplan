@@ -18,8 +18,10 @@ import uuid
 Base = declarative_base()
 
 service_user = db.Table('service_user',
-                        db.Column('service_id', db.Integer, db.ForeignKey('service.id')),
-                        db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+                        db.Column('service_id', db.Integer,
+                                  db.ForeignKey('service.id')),
+                        db.Column('user_id', db.Integer,
+                                  db.ForeignKey('user.id'))
                         )
 
 
@@ -98,6 +100,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     manual_schedule = db.Column(db.Integer)
     work_percent = db.Column(db.Integer)
     role = db.Column(db.String(140))
+    active = db.Column(db.Integer)
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -137,9 +140,10 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     def to_dict(self, include_email=False):
         data = {
             'id': self.id,
-            'username': self.username,
+            'username':  self.username,
             'last_seen': self.last_seen.isoformat() + 'Z',
-            'about_me': self.about_me,
+            'about_me':  self.about_me,
+            'active':    self.active,
             '_links': {
                 'self': url_for('api.get_user', id=self.id),
                 'avatar': self.avatar(128)
@@ -248,7 +252,8 @@ class Work(PaginatedAPIMixin, db.Model):
         if 'service_id' in data:
             service = Service.query.get(data['service_id'])
         elif 'service_name' in data:
-            service = Service.query.filter_by(name=data['service_name']).first()
+            service = Service.query.filter_by(
+                name=data['service_name']).first()
         else:
             return {'msg': "no input for service id or name", 'success': False}
 
