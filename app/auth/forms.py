@@ -101,3 +101,5 @@ class AdminUpdateUserForm(FlaskForm):
         self.username.choices = [(u.id, u.username)
                                  for u in User.query.order_by(User.username).all()]
         self.username.choices.insert(0, (-1, _l('- Select -')))
+
+# test for sign commits 
