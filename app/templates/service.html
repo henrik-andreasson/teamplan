@@ -3,7 +3,6 @@
 
 
 {% block app_content %}
-    <h1>{{ title }}</h1>
 
     {% if form %}
     <div class="row">
@@ -11,11 +10,11 @@
             {{ wtf.quick_form(form) }}
         </div>
     </div>
-
-
     {% endif %}
 
+    {% if services %}
     <h1>{{ _('List Services') }}</h1>
+    {% endif %}
     {% for service in services %}
         {% include '_service.html' %}
     {% endfor %}
