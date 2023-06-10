@@ -153,3 +153,14 @@ def register(app):
         else:
             user.set_password(password)
             db.session.commit()
+
+    @user.command()
+    @click.argument('username')
+    def admin(username):
+        """set role for user."""
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            print("User not found")
+        else:
+            user.set_admin()
+            db.session.commit()

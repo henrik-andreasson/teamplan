@@ -93,8 +93,9 @@ class AdminUpdateUserForm(FlaskForm):
     work_percent = StringField(_l('Work Percent'), default=100)
     role = SelectField(_l('Role'), choices=[('user', 'User'),
                                             ('admin', 'Admin')])
+    active = BooleanField(_l('Active'))
 
-    submit = SubmitField(_l('Register'))
+    submit = SubmitField(_l('Update'))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -102,4 +103,4 @@ class AdminUpdateUserForm(FlaskForm):
                                  for u in User.query.order_by(User.username).all()]
         self.username.choices.insert(0, (-1, _l('- Select -')))
 
-# test for sign commits 
+# test for sign commits

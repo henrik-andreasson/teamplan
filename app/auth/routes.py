@@ -145,9 +145,9 @@ def user_set_password():
 def user_save():
     admin = User.query.filter_by(username=current_user.username).first()
     if admin.role != "admin":
-
         flash(_('Updating other users is limited to admins'))
         return redirect(url_for('main.index'))
+
     userid = request.args.get('user')
     if userid is None:
         flash(_('Userid not passed to user update'))
@@ -165,6 +165,7 @@ def user_save():
         user.email = form.email.data
         user.work_percent = form.work_percent.data
         user.role = form.role.data
+        user.active = form.active.data
         db.session.commit()
         flash(_('User Updated'))
         return redirect(url_for('main.index'))
@@ -172,8 +173,9 @@ def user_save():
         form.email.data = user.email
         form.manual_schedule.data = user.manual_schedule
         form.work_percent.data = user.work_percent
-        form.role.data = user.role
-        return render_template('auth/change_password.html', form=form)
+        form.active.data = user.active
+        form.role.data = user.role 
+        return render_template('auth/register.html', form=form)
 
 
 @bp.route('/user/update/', methods=['GET', 'POST'])
