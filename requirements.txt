@@ -1,0 +1,16 @@
+flask-sqlalchemy
+flask-migrate
+flask-login
+flask-mail
+flask-bootstrap
+flask-moment
+flask-babel
+python-dotenv
+jwt
+flask-wtf
+WTForms-Components
+flask-httpauth
+rocketchat_API
+icalendar
+gunicorn
+email_validator
