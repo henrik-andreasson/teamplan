@@ -129,6 +129,51 @@ def users_stats(month, service):
     return stats
 
 
+def oncall_stats(ts, service):
+
+    if ts is None:
+        return -1
+    else:
+        print(f"ts: {ts}")
+
+    if service is None:
+        return -1
+
+    stats = {}
+
+    for u in service.users:
+        stats[u.username] = Oncall.query.filter((Oncall.service_id == service.id)
+                                         & (Oncall.user_id == u.id)
+                                         & ((Oncall.start < ts) & (Oncall.stop > ts))
+                                         ).with_entities(func.count()).scalar()
+
+        print(f"oncall_stats: checking user: {u.username} for oncall at {ts} {stats[u.username]}")
+
+    return stats
+
+
+def absence_stats(ts, service):
+
+    if ts is None:
+        return -1
+    else:
+        print(f"ts: {ts}")
+
+    if service is None:
+        return -1
+
+    stats = {}
+
+    for u in service.users:
+        stats[u.username] = Absence.query.filter((Absence.user_id == u.id)
+                                         & ((Absence.start < ts) & (Absence.stop > ts))
+                                         ).with_entities(func.count()).scalar()
+
+        print(f"abcense_stats: checking user: {u.username} for abcense at {ts} {stats[u.username]}")
+
+    return stats
+
+
 @bp.route('/', methods=['GET', 'POST'])
 @bp.route('/index', methods=['GET', 'POST'])
 @login_required
@@ -526,13 +571,11 @@ def explore():
     page = request.args.get('page', 1, type=int)
 
     if all:
-        work = Work.query.filter((Work.status != "assigned")).order_by(Work.start.desc()).paginate(
-                              page, current_app.config['POSTS_PER_PAGE'], False)
+        work = Work.query.filter((Work.status != "assigned")).order_by(Work.start.desc()).paginate(page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     else:
         work = Work.query.filter((Work.status != "assigned")
                                  & (Work.start > dt_start)
-                                 ).order_by(Work.start.desc()).paginate(
-                              page, current_app.config['POSTS_PER_PAGE'], False)
+                                 ).order_by(Work.start.desc()).paginate(page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     next_url = url_for('main.explore', page=work.next_num) \
         if work.has_next else None
@@ -551,7 +594,7 @@ def user(username):
 
     page = request.args.get('page', 1, type=int)
     users_work = Work.query.filter(Work.user_id == user.id).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     next_url = url_for('main.user', username=user.username, page=users_work.next_num) if users_work.has_next else None
     prev_url = url_for('main.user', username=user.username, page=users_work.prev_num) if users_work.has_prev else None
     return render_template('user.html', user=user, allwork=users_work.items,
@@ -562,7 +605,7 @@ def user(username):
 @login_required
 def user_list():
     page = request.args.get('page', 1, type=int)
-    users = User.query.order_by(User.username).paginate(page, current_app.config['POSTS_PER_PAGE'], False)
+    users = User.query.order_by(User.username).paginate(page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     services = Service.query.all()
 
     next_url = url_for('main.user_list', page=users.next_num) if users.has_next else None
@@ -599,7 +642,7 @@ def service_add():
 
     page = request.args.get('page', 1, type=int)
     services = Service.query.order_by(Service.updated.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     next_url = url_for('main.service_list', page=services.next_num) if services.has_next else None
     prev_url = url_for('main.service_list', page=services.prev_num) if services.has_prev else None
     return render_template('service.html', form=form, services=services.items,
@@ -657,7 +700,7 @@ def service_edit():
 def service_list():
     page = request.args.get('page', 1, type=int)
     services = Service.query.order_by(Service.updated.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     next_url = url_for('main.service_list', page=services.next_num) if services.has_next else None
     prev_url = url_for('main.service_list', page=services.prev_num) if services.has_prev else None
     return render_template('services.html', services=services.items,
@@ -1129,7 +1172,7 @@ def work_edit():
         else:
             string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
                                                  work.service, work.user.username)
-        service = Service.query.filter_by(name=form.service.data).first()
+        service = Service.query.get(form.service.data)
 
         if current_app.config['ENFORCE_ROLES'] is True:
             user = User.query.filter_by(username=current_user.username).first()
@@ -1142,23 +1185,54 @@ def work_edit():
             # if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
             #     flash(_('Users may only take that is status: wants/needs-out, other are limited to admins'))
 
+        flashmsg = _("Your changes have been saved.")
         if service is None:
             print("service is none...")
+
+        elif work.service_id != service.id:
+            userworksatservice = None
+            for su in service.users:
+                print(f'checking user: {su.id}/{su.username} against {form.user.data} for service: {service.name}')
+                if form.user.data == su.id:
+                    print(f'found user: {su.id}/{su.username} against {form.user.data} for service: {service.name}')
+                    userworksatservice = True
+            if userworksatservice != True:
+                flashmsg = _('User/service illegal combination, user set no none, other changes saved.')
+                print('User/service illegal combination, user set no none, other changes saved.')
+                work.status = "unassigned"
+                work.user_id = None
+                work.user = None
+                work.color = service.color
+                work.service = service
+                work.service_id = service.id
+
         else:
             work.color = service.color
             work.service = service
+            work.service_id = service.id
 
-        work.start = form.start.data
-        work.stop = form.stop.data
-        work.user_id = form.user.data
-        work.status = form.status.data
-
-        if work.status == "unassigned":
+        if form.user.data == 0:
+            work.status = "unassigned"
             work.user_id = None
             work.user = None
 
+        elif work.user_id != form.user.data:
+            work.status = "assigned"
+            work.user_id = form.user.data
+
+        elif form.status.data == "unassigned":
+            work.status = "unassigned"
+            work.user_id = None
+            work.user = None
+
+        else:
+            work.status = form.status.data
+
+        work.start = form.start.data
+        work.stop = form.stop.data
+
         db.session.commit()
-        flash(_('Your changes have been saved.'))
+        flash(flashmsg)
 
         if current_app.config['ROCKET_ENABLED']:
             if work.user is not None:
@@ -1181,8 +1255,19 @@ def work_edit():
     else:
         form.service.data = work.service_id
         form.user.data = work.user_id
-# TODO: check id user if absent
-        form.user.choices = [(su.id, su.username) for su in work.service.users]
+        service = Service.query.get(work.service_id)
+
+        user_stats = users_stats(work.start, service)
+        onstats = oncall_stats(work.start, service)
+        abstats = absence_stats(work.start, service)
+        userlist = []
+        userlist.extend([(0, f'- None -')])
+
+        for su in work.service.users:
+            userlist.extend([(su.id, f'{su.username} work: {user_stats[su.username]} h oncall: {onstats[su.username]} absent:{abstats[su.username]}')])
+        form.user.choices = userlist
+
+#        form.user.choices = [(su.id, su.username) for su in work.service.users]
 
         return render_template('index.html', title=_('Edit Work'),
                                form=form)
@@ -1212,22 +1297,22 @@ def work_list():
     if sort == 'username':
         sortstr = "{}(Work.{})".format(order, 'user_id')
         work = Work.query.order_by(eval(sortstr)).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     elif sort == 'service':
         sortstr = "{}(Work.{})".format(order, 'service_id')
         work = Work.query.order_by(eval(sortstr)).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     elif username is not None:
         u = User.query.filter(User.username == username).first_or_404()
         work = Work.query.filter(Work.user_id == u.id).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     else:
         sortstr = "{}(Work.{})".format(order, sort)
         work = Work.query.order_by(eval(sortstr)).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     next_url = url_for('main.work_list', page=work.next_num, sort=sort, order=order) \
         if work.has_next else None
@@ -1400,11 +1485,11 @@ def absence_list():
     if u is not None:
 
         absence = Absence.query.filter_by(Absence.user_id == u.id).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     else:
         absence = Absence.query.order_by(Absence.start).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     next_url = url_for('main.absence_list', page=absence.next_num) \
         if absence.has_next else None
@@ -1597,13 +1682,13 @@ def oncall_list():
 
     if username is not None:
         oncall = Oncall.query.filter_by(username=username).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     elif service is not None:
         oncall = Oncall.query.filter_by(service=service).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
     else:
         oncall = Oncall.query.order_by(Oncall.start).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     next_url = url_for('main.oncall_list', page=oncall.next_num) \
         if oncall.has_next else None
@@ -1836,7 +1921,7 @@ def nonworkingdays_list():
     page = request.args.get('page', 1, type=int)
 
     nonworkingdays = NonWorkingDays.query.order_by(NonWorkingDays.start).paginate(
-            page, current_app.config['POSTS_PER_PAGE'], False)
+            page=page, per_page=current_app.config['POSTS_PER_PAGE'])
 
     next_url = url_for('main.nonworkingdays_list', page=nonworkingdays.next_num) \
         if nonworkingdays.has_next else None

@@ -82,6 +82,8 @@ class WorkForm(FlaskForm):
         super().__init__(*args, **kwargs)
         self.user.choices = [(u.id, u.username)
                              for u in User.query.order_by(User.username).all()]
+        self.user.choices.extend([(0, f'- None -')])
+
         self.service.choices = [(s.id, s.name)
                                 for s in Service.query.order_by(Service.name).all()]
 
