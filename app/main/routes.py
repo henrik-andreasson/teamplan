@@ -629,7 +629,9 @@ def service_add():
     form = ServiceForm()
 
     if form.validate_on_submit():
-        service = Service(name=form.name.data, color=form.color.data)
+        service = Service(name=form.name.data,
+                          lightcolor=form.lightcolor.data,
+                          darkcolor=form.darkcolor.data)
         for u in form.users.data:
             user = User.query.get(u)
             print("Adding: User: %s to: %s" % (user.username, service.name))
@@ -677,7 +679,8 @@ def service_edit():
             service.users.append(user)
         service.manager = User.query.filter_by(id=form.manager.data).first()
         service.name = form.name.data
-        service.color = form.color.data
+        service.lightcolor = form.lightcolor.data
+        service.darkcolor = form.darkcolor.data
 
         db.session.commit()
 
@@ -690,7 +693,8 @@ def service_edit():
         form = ServiceForm(users=pre_selected_users)
         form.manager.data = service.manager_id
         form.name.data = service.name
-        form.color.data = service.color
+        form.darkcolor.data = service.darkcolor
+        form.lightcolor.data = service.lightcolor
         return render_template('service.html', title=_('Edit Service'),
                                form=form)
 
@@ -712,15 +716,22 @@ def service_list():
 @login_required
 def edit_profile():
     form = EditProfileForm(current_user.username)
+    edituser = User.query.filter_by(username=current_user.username).first()
+    if edituser is None:
+        render_template('edit_profile.html', title=_('User is not found'))
+
     if form.validate_on_submit():
-        current_user.username = form.username.data
-        current_user.about_me = form.about_me.data
+
+        edituser.about_me = form.about_me.data
+        edituser.set_theme(form.theme.data)
+        print(f'user theme: {edituser.theme}')
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.edit_profile'))
     elif request.method == 'GET':
-        form.username.data = current_user.username
-        form.about_me.data = current_user.about_me
+        form.username.data = edituser.username
+        form.theme.data = edituser.theme
+        form.about_me.data = edituser.about_me
     return render_template('edit_profile.html', title=_('Edit Profile'),
                            form=form)
 
@@ -788,7 +799,6 @@ def work_add():
 
         work = Work(start=form.start.data,
                     stop=form.stop.data,
-                    color=service.color,
                     status=form.status.data)
         work.user = user
         work.service = service
@@ -1092,7 +1102,6 @@ def work_add_month():
                 if not work_fm_exist:
                     work = Work(start=dt_fm_start,
                                 stop=dt_fm_stop,
-                                color=service.color,
                                 status=status)
                     print("New work, {}-{}".format(fm_start, fm_stop))
                     if status == "assigned":
@@ -1123,7 +1132,6 @@ def work_add_month():
 
                     work = Work(start=dt_em_start,
                                 stop=dt_em_stop,
-                                color=service.color,
                                 status=status)
                     if status == "assigned":
                         selected_username2 = select_user_for_weighted_work(service, dt_em_start, dt_em_stop)
@@ -1202,12 +1210,10 @@ def work_edit():
                 work.status = "unassigned"
                 work.user_id = None
                 work.user = None
-                work.color = service.color
                 work.service = service
                 work.service_id = service.id
 
         else:
-            work.color = service.color
             work.service = service
             work.service_id = service.id
 
@@ -1269,7 +1275,7 @@ def work_edit():
 
 #        form.user.choices = [(su.id, su.username) for su in work.service.users]
 
-        return render_template('index.html', title=_('Edit Work'),
+        return render_template('work.html', title=_('Edit Work'),
                                form=form)
 
 

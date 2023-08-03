@@ -28,6 +28,11 @@ class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), validators=[Length(min=2, max=40)])
     about_me = TextAreaField(_l('About me'),
                              validators=[Length(min=0, max=140)])
+    theme = SelectField(_l('Theme'),
+                                 choices=[('default', _l('Default')),
+                                          ('dark',    _l('Dark')),
+                                          ('light',   _l('Light'))],
+                                 default='default')
     submit = SubmitField(_l('Submit'))
     cancel = SubmitField(_l('Cancel'))
 
@@ -44,7 +49,8 @@ class EditProfileForm(FlaskForm):
 
 class ServiceForm(FlaskForm):
     name = StringField(_l('name'), validators=[DataRequired()])
-    color = StringField(_l('color'), validators=[DataRequired()])
+    darkcolor = StringField(_l('darkcolor'), validators=[DataRequired()])
+    lightcolor = StringField(_l('lightcolor'), validators=[DataRequired()])
     users = SelectMultipleField(
         _l('Users'), coerce=int, render_kw={"size": 20})
     manager = SelectField(_l('Manager'), validators=[
@@ -87,7 +93,7 @@ class WorkForm(FlaskForm):
         self.service.choices = [(s.id, s.name)
                                 for s in Service.query.order_by(Service.name).all()]
 
-
+ 
 class GenrateMonthWorkForm(FlaskForm):
     service = SelectField(_l('service'), validators=[DataRequired()])
     month = DateTimeField(_l('motnh'), validators=[DataRequired()],

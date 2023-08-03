@@ -1,8 +1,16 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
-{% block app_content %}
-    <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
+{% block metatags %}
+<title>Teamplan</title>
+<meta name="description" content="Teamplan">
+{% endblock %}
+
+{% block contents %}
+
+<div class="container">
+
+    <h1 style="margin-top:37px;">{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -40,5 +48,6 @@
     {{ wtf.quick_form(form) }}
     <br>
     {% endif %}
+  </div>
 
 {% endblock %}

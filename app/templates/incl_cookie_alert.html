@@ -1,0 +1,128 @@
+<div class="modal fade" id="cookieModal" tabindex="-1" role="dialog" aria-labelledby="cookieModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg shadow" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span style="font-weight: bold" class="modal-title">Cookie Settings</span>
+            </div>
+            <div data-nosnippet class="modal-body">
+                <div style="font-size: 80%">
+                    <p id="cmText1"></p>
+                    <p id="cmText2"></p>
+                </div>
+                <p class="d-flex justify-content-between">
+                    <a href="{{url_for('main.index')}}">Privacy Notice</a>
+                    <a href="#alert-options" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="alert-options">My Settings</a>
+                </p>
+                <div id="alert-options" class="collapse">
+                    <div data-name="necessary">
+                        <div class="form-check mb-1">
+                            <input type="checkbox" checked disabled class="form-check-input" id="checkboxNecessary">
+                            <label class="form-check-label" for="checkboxNecessary"><b>Necessary</b></label>
+                        </div>
+                        <ul>
+                            <li>Required to run the website</li>
+                        </ul>
+                    </div>
+                    <div data-name="analysis">
+                        <div class="form-check mb-1">
+                            <input type="checkbox" class="form-check-input" id="checkboxAnalysis"
+                            {%if g.policyCode>1%}
+                            checked
+                            {%endif%}
+                            >
+                            <label class="form-check-label" for="checkboxAnalysis"><b>Analysis</b></label>
+                        </div>
+                        <ul>
+                            <li>Monitoring website usage and optimizing the user experience</li>
+                            <!--li>Evaluation of marketing actions</li-->
+                        </ul>
+                    </div>
+                    <!--div data-name="personalization">
+                        <div class="form-check mb-1">
+                            <input type="checkbox" class="form-check-input" id="checkboxPersonalization" name="checkboxPersonalization"
+                            {%if g.policyCode==2 or g.policyCode==3%}
+                            checked
+                            {%endif%}
+                            >
+                            <label class="form-check-label" for="checkboxPersonalization"><b>Personalization</b></label>
+                        </div>
+                        <ul>
+                            <li>Storage of your preferences from previous visits</li>
+                            <li>Collecting user feedback to improve our website</li>
+                            <li>Recording of your interests in order to provide customised content and offers</li>
+                        </ul>
+                    </div-->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnSaveCookieSettings" class="cookiebutton btn btn-outline-dark">Save settings</button>
+                <button id="btnAgreeEssential" class="cookiebutton btn btn-secondary">Agree to essential</button>
+                <button id="btnAgreeAll" class="cookiebutton btn btn-secondary">Agree to all</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    var myCookieBanner = new bootstrap.Modal(document.getElementById('cookieModal'),
+                        {backdrop: 'static', keyboard: false});
+
+    var cookieButttonClick = function (event) {
+
+        var source = event.target || event.srcElement;
+        //IF THE CLICKED ELEMENT IS A BOOTSTRAP ICON GET BUTTON, THE PARENT!
+        if (source.tagName == 'I')
+        {
+          source = source.parentElement;
+        }
+        //SET CHECKBOXES DEPENDING ON BUTTONS
+        const checkboxNecessary = document.getElementById('checkboxNecessary')
+        const checkboxAnalysis = document.getElementById('checkboxAnalysis')
+        if (source.id=='btnAgreeEssential'){
+            checkboxAnalysis.checked = false;
+            checkboxNecessary.checked = true;
+        }
+        if (source.id=='btnAgreeAll'){
+            checkboxAnalysis.checked = true;
+            checkboxNecessary.checked = true;
+        }
+        //PACK DATA TO BE SENT VIA AJAX
+        const params = {
+                btnselected: source.id,
+                checkboxNecessary:document.getElementById('checkboxNecessary').checked,
+                checkboxAnalysis:document.getElementById('checkboxAnalysis').checked,
+        }
+        myCookieBanner.hide();
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', "{{url_for('auth.ajcookiepolicy')}}")
+        xhr.setRequestHeader('Content-type', 'application/json')
+        xhr.responseType = "json"; //CRUCIAL!
+        xhr.send(JSON.stringify(params)) // Make sure to stringify
+        xhr.onload = function() {
+            if (xhr.readyState == 4 && xhr.status == 204) {
+                //status response from Flask with exact number!
+                console.log(`User preferences saved`);
+            } else {
+                console.log(`Error: ${xhr.status}`);
+            }
+        }
+    }
+
+    //THIS FUNCTION IS CALLED BY THE FOOTER LINK: IT SHOULD OPEN THE
+    //COOKIE ALERT MODAL.
+    function open_cookie_alert(){
+	    myCookieBanner.show();
+    }
+
+    const cookiebuttons = document.getElementsByClassName("cookiebutton");
+    Array.from(cookiebuttons).forEach(function (element) {
+        element.addEventListener("click", cookieButttonClick);
+    })
+</script>
+
+{%if g.showCookieAlert==true%}
+<script>
+    myCookieBanner.show();
+</script>
+{%endif%}

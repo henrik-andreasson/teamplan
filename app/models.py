@@ -56,7 +56,8 @@ class Service(PaginatedAPIMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(140))
     updated = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    color = db.Column(db.String(140))
+    darkcolor = db.Column(db.String(140))
+    lightcolor = db.Column(db.String(140))
     users = db.relationship('User', secondary=service_user)
     manager = db.relationship('User', foreign_keys='Service.manager_id')
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -102,6 +103,7 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     work_percent = db.Column(db.Integer)
     role = db.Column(db.String(140))
     active = db.Column(db.Integer)
+    theme = db.Column(db.String(140))
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -131,6 +133,13 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             {'reset_password': self.id, 'exp': time() + expires_in},
             current_app.config['SECRET_KEY'],
             algorithm='HS256').decode('utf-8')
+
+    def set_theme(self, theme):
+        if theme in ['light', 'dark']:
+            self.theme = theme
+            return True
+        else:
+            return False
 
     @staticmethod
     def verify_reset_password_token(token):
@@ -220,7 +229,6 @@ class Work(PaginatedAPIMixin, db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user = db.relationship('User')
     status = db.Column(db.String(140))
-    color = db.Column(db.String(140))
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
     service = db.relationship('Service')
 

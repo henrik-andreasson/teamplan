@@ -1,0 +1,108 @@
+<!-- Fixed navbar -->
+{% if current_user.theme == 'light' %}
+<nav class="navbar navbar-expand-md navbar-light fixed-top shadow-sm" style="background-color: #7e4fe3;">
+{% else %}
+<nav class="navbar navbar-expand-md navbar-light fixed-top shadow-sm" style="background-color: #2e2f69;">
+{% endif %}
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="{{url_for('main.index')}}">Team Planning</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+        </button>
+        {% if current_user.is_authenticated %}
+
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav ms-auto mb-2 mb-md-0">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Service
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{{ url_for('main.service_list') }}">{{ 'List' }}</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('main.service_add') }}">{{ 'Add' }}</a></li>
+                </ul>
+              </li>
+
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Users
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="{{ url_for('main.user_list') }}">{{ 'List' }}</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('auth.register') }}">{{ 'Add' }}</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('auth.user_set_password') }}">{{ 'Set Password' }}</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('auth.user_update') }}">{{ 'Update' }}</a></li>
+                </ul>
+              </li>
+
+
+              <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      Work
+                          </a>
+                          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('main.work_list') }}">{{ 'List' }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.work_add') }}">{{ 'Add' }}</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.work_add_month') }}">{{ 'Add month' }}</a></li>
+                          </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        On-call
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                              <li><a class="dropdown-item" href="{{ url_for('main.oncall_list') }}">{{ 'List' }}</a></li>
+                              <li><a class="dropdown-item" href="{{ url_for('main.oncall_add') }}">{{ 'Add' }}</a></li>
+                              <li><a class="dropdown-item" href="{{ url_for('main.oncall_add_month') }}">{{ 'Add month' }}</a></li>
+                            </ul>
+                  </li>
+
+                  <li class="nav-item dropdown">
+                      <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          Absence
+                              </a>
+                              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('main.absence_list') }}">{{ 'List' }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('main.absence_add') }}">{{ 'Add' }}</a></li>
+                              </ul>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Non working days
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                  <li><a class="dropdown-item" href="{{ url_for('main.nonworkingdays_list') }}">{{ 'List' }}</a></li>
+                                  <li><a class="dropdown-item" href="{{ url_for('main.nonworkingdays_add') }}">{{ 'Add' }}</a></li>
+                                </ul>
+                      </li>
+
+                <li class="nav-item">
+                    <a class="nav-link aria-current="page" href="{{url_for('main.ical_info')}}">Ical</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link href="{{url_for('main.ical_info')}}">Help Needed</a>
+                </li>
+                   {% endif %}
+                   {% if current_user.is_anonymous %}
+                   <li class="nav-item">
+                       <a class="nav-link href="{{url_for('auth.login')}}">Login</a>
+                   </li>
+                   {% else %}
+                   <li class="nav-item dropdown">
+                       <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                           Logged in user
+                               </a>
+                               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                 <li><a class="dropdown-item" href="{{ url_for('main.user', username=current_user.username) }}">{{ 'Profile' }}</a></li>
+                                 <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">{{ 'Change password' }}</a></li>
+                                 <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">{{ 'Logout' }}</a></li>
+                               </ul>
+                     </li>
+                     {% endif %}
+
+            </ul>
+        </div>
+    </div>
+</nav>

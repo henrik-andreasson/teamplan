@@ -120,7 +120,7 @@ def ical():
     for w in work:
 
         event = Event()
-        if w.user is not None:
+        if w.user is not None and w. service is not None:
             user = User.query.get(w.user.id)
             event.add('summary', "%s@%s" % (w.user.username, w.service.name))
 

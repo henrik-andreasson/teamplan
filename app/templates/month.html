@@ -1,23 +1,20 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
-{% block app_content %}
+{% block contents %}
 
-    <nav aria-label="...">
-        <ul class="pager">
-            <li class="previous{% if not prev_url %} disabled{% endif %}">
-                <a href="{{ prev_url or '#' }}">
+
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+            <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url or '#' }}">
                     <span aria-hidden="true">&larr;</span>
                     {{ _('Previous Month') }} {{ month_info['prev'] }}
                 </a>
             </li>
-            <li>
-              <span aria-hidden="true">
-                {{ month_info['this'] }}
-               </span>
-            </li>
-            <li class="next{% if not next_url %} disabled{% endif %}">
-                <a href="{{ next_url or '#' }}">
+            <li> <span aria-hidden="true"> <a class="page-link" href="#">{{ month_info['this'] }}</a> </span>    </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url or '#' }}">
                     {{ _('Next Month') }} {{ month_info['next'] }}
                     <span aria-hidden="true">&rarr;</span>
                 </a>
@@ -26,66 +23,6 @@
     </nav>
 
 
-<!--
-    <table class="table table-hover">
-      <tr>
-        <td>
-            {{ _('Users') }}
-        </td>
-      {% if month_info['showabsence'] == "show" %}
-        <td style="background: #AAAAAA">
-      {% else %}
-        <td>
-      {% endif %}
-          <a href="{{ url_for('main.index', month=selected_month, absence='show')}}">
-            {{ _('Absence') }}    </a>
-        </td>
-
-    {% for user in users %}
-
-      {% set user_link %}
-        <a href="{{ url_for('main.index', month=selected_month, username=user.username) }}">
-          {{ user.username }}
-        </a>
-      {% endset %}
-
-      {%if month_info['selected_user'] == user.username %}
-        <td style="background: #AAAAAA">
-      {% else %}
-        <td>
-      {% endif %}
-            {{ user_link }}          </td>
-
-    {% endfor %}
-      </tr>
-      <tr>
-        <td>
-            {{ _('Services') }}
-        </td>
-
-    {% for service in services %}
-
-      {% set service_link %}
-        <a href="{{ url_for('main.index', month=selected_month, service=service.name) }}">
-          {{ service.name }}
-        </a>
-      {% endset %}
-
-            {%if month_info['selected_service'] == service.name %}
-              <td style="background: #AAAAAA">
-            {% else %}
-              <td>
-            {% endif %}
-                <div style="background: {{service.color}}">
-                  {{ service_link }}
-                </div>
-              </td>
-    {% endfor %}
-      </tr>
-
-    </table>
-
--->
     <table class="table table-hover">
       <tr>
         <td>  {{ _('Week no / Oncall') }} </td>
@@ -203,8 +140,11 @@
                     {% endset %}
                 {% endif %}
 
-
-                <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item" style="background: {{w.color}}">
+                {% if current_user.theme == 'dark' %}
+                <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item p-3 rounded-3" style="background: {{w.service.darkcolor}}">
+                {% else %}
+                <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item p-3 rounded-3" style="background: {{w.service.lightcolor}}">
+                {% endif %}
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
                                         username=w.user.username, service=w.service.name) }} {{help_wanted}}</h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
@@ -277,6 +217,24 @@
       {% endfor %}
     </table>
 
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+              <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span>
+                    {{ _('Previous Month') }} {{ month_info['prev'] }}
+                </a>
+            </li>
+            <li> <span aria-hidden="true"> <a class="page-link" href="#">{{ month_info['this'] }}</a> </span>    </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url or '#' }}">
+                    {{ _('Next Month') }} {{ month_info['next'] }}
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
 
     {% if form %}
     <table class="table table-hover">
@@ -328,7 +286,7 @@
       </tr>
     </table>
 
-    <table class="table table-hover">
+    <table class="table table-hover" data-bs-theme="dark">
 
       <tr>
         <td> {{ _('Working days in month') }}: </td>
