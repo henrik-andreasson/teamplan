@@ -129,6 +129,38 @@ def users_stats(month, service):
     return stats
 
 
+def users_work_within(start,stop,service):
+
+
+    if start is None:
+        return -1
+    else:
+        print(f"start: {start}")
+
+    if stop is None:
+        return -1
+    else:
+        print(f"stop: {stop}")
+
+    if service is None:
+        return -1
+    else:
+        print(f"service: {service}")
+
+    stats = {}
+
+    for u in service.users:
+        stats[u.username] = Work.query.filter((Work.user_id == u.id)                          #   <---day -->
+                                             & ((Work.start <= start) & (Work.stop >= start)  #<--work-->
+                                             | (Work.start  >= start) & (Work.stop <=  stop)  #      <-->
+                                             | (Work.start >=  start) & (Work.stop <=  stop)  #           <---->
+                                         )).with_entities(func.count()).scalar()
+
+        print("users_stats: checking user: {} -> {} shifts".format(u.username, stats[u.username]))
+
+    return stats
+
+
 def oncall_stats(ts, service):
 
     if ts is None:
@@ -152,24 +184,33 @@ def oncall_stats(ts, service):
     return stats
 
 
-def absence_stats(ts, service):
+def absence_stats(start,stop,service):
 
-    if ts is None:
+    if start is None:
         return -1
     else:
-        print(f"ts: {ts}")
+        print(f"start: {start}")
+
+    if stop is None:
+        return -1
+    else:
+        print(f"stop: {stop}")
 
     if service is None:
         return -1
+    else:
+        print(f"service: {service}")
 
     stats = {}
 
     for u in service.users:
-        stats[u.username] = Absence.query.filter((Absence.user_id == u.id)
-                                         & ((Absence.start < ts) & (Absence.stop > ts))
-                                         ).with_entities(func.count()).scalar()
+        stats[u.username] = Absence.query.filter((Absence.user_id == u.id)                        #   <---abs -->
+                                             & ((Absence.start >= start) & (Absence.start <= stop)  #<--work-->
+                                             | (Absence.start <=  start) & (Absence.stop <=  stop)  #      <-->
+                                             | (Absence.start <=  start) & (Absence.stop >=  stop)  #           <---->
+                                         )).with_entities(func.count()).scalar()
 
-        print(f"abcense_stats: checking user: {u.username} for abcense at {ts} {stats[u.username]}")
+        print(f"abcense_stats: checking user: {u.username} for asence at {start} -> {stop} {stats[u.username]}")
 
     return stats
 
@@ -349,8 +390,33 @@ def index():
                                                              & (NonWorkingDays.start < dt_stop)
                                                              ).all()
 
-                for o in oncall:
-                    print("oncall debug: {}".format(o))
+                extra_work_info = {}
+                for w in work:
+                    extra_work_info[w.id] = {}
+                    extra_work_info[w.id]['no_of_work'] = 0
+                    extra_work_info[w.id]['oncall'] = 0
+                    extra_work_info[w.id]['absence'] = 0
+                    if w.user_id is None:
+                        print(f'user is none, skipping')
+                        continue
+                    extra_work_info[w.id]['no_of_work'] = Work.query.filter(((Work.user_id == w.user_id)
+                                                                      & (Work.start > dt_start)
+                                                                      & (Work.stop < dt_stop)
+                                                                      )).with_entities(func.count()).scalar()
+
+                    extra_work_info[w.id]['oncall'] = Oncall.query.filter((Oncall.user_id == w.user_id)
+                                                                & (Oncall.service_id == w.service_id)                      #   < -- oncall -->
+                                                                & ((Oncall.start <= dt_start) & (Oncall.stop >= dt_stop)   #     <--wrk-->
+                                                                |  (Oncall.start >= dt_start) & (Oncall.start < dt_stop)   # <--wrk-->
+                                                                |  (Oncall.start < dt_start) & (Oncall.stop > dt_start)    #        <--wrk----->
+                                                                )).with_entities(func.count()).scalar()
+
+                    extra_work_info[w.id]['absence'] = Absence.query.filter((Absence.user_id == w.user_id)                         #   <---abs -->
+                                                                       & ((Absence.start <= dt_start) & (Absence.stop >= dt_stop)  #    <--work->
+                                                                       | (Absence.start  >= dt_start) & (Absence.start <= dt_stop) #  <-->
+                                                                       | (Absence.stop  >= dt_start) & (Absence.stop <= dt_stop)   #           <---->
+                                                                 )).with_entities(func.count()).scalar()
+
                 if weekday not in working_days:
                     # TODO does not accounts for half days off
                     non_working_days_in_month += 1
@@ -362,6 +428,12 @@ def index():
                 day_info['oncall'] = oncall
                 day_info['nwd'] = nonworkingdays
                 day_info['absence'] = absence
+                day_info['extra_work_info'] = extra_work_info
+                for w in extra_work_info:
+                    ewi = extra_work_info[w]
+                    asdf = ewi['absence']
+                    print(f'asdf: {asdf}')
+
             output_week.insert(weekday, day_info)
 
         output_month.insert(mon_week, output_week)
@@ -513,14 +585,14 @@ def plan_month():
 
                         user_info['work_today'] = work
 
-                        print(f'userinfo: {user_info["user"].username}')
+#                        print(f'userinfo: {user_info["user"].username} work: {work}')
                         user_info['absence'] = Absence.query.filter((Absence.user_id == su.id)
                                                                     & ((Absence.start > dt_start) & (Absence.start < dt_stop)
                                                                        | (Absence.stop > dt_start) & (Absence.stop < dt_stop)
                                                                        | (Absence.start < dt_start) & (Absence.stop > dt_stop)
                                                                        )
                                                                     ).with_entities(func.count()).scalar()
-                        print(f'userinfo: absence: {user_info["absence"]}')
+#                        print(f'userinfo: absence: {user_info["absence"]}')
 
                         users.append(user_info)
 
@@ -1175,11 +1247,11 @@ def work_edit():
 
     if request.method == 'POST' and form.validate_on_submit():
         if work.user is None:
-            string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                                 work.service, _("none"))
+            string_from = '%s\t%s\t%s\t@%s\t%s\n' % (work.start, work.stop,
+                                                 work.service, _("none"),work.status)
         else:
-            string_from = '%s\t%s\t%s\t@%s\n' % (work.start, work.stop,
-                                                 work.service, work.user.username)
+            string_from = '%s\t%s\t%s\t@%s\t%s\n' % (work.start, work.stop,
+                                                 work.service, work.user.username, work.status)
         service = Service.query.get(form.service.data)
 
         if current_app.config['ENFORCE_ROLES'] is True:
@@ -1193,7 +1265,6 @@ def work_edit():
             # if user.role != "admin" and (form.status.data != "wants-out" or form.status.data != "needs-out"):
             #     flash(_('Users may only take that is status: wants/needs-out, other are limited to admins'))
 
-        flashmsg = _("Your changes have been saved.")
         if service is None:
             print("service is none...")
 
@@ -1238,16 +1309,15 @@ def work_edit():
         work.stop = form.stop.data
 
         db.session.commit()
-        flash(flashmsg)
+        if work.user is not None:
+            string_to = '%s\t%s\t%s\t@%s\t%s\n' % (work.start, work.stop,
+                                                   work.service, work.user.username,
+                                                   work.status)
+        else:
+            string_to = '%s\t%s\t%s\t%s\t%s\n' % (work.start, work.stop,
+                                                  work.service, "none", work.status)
 
         if current_app.config['ROCKET_ENABLED']:
-            if work.user is not None:
-                string_to = '%s\t%s\t%s\t@%s\t%s\n' % (work.start, work.stop,
-                                                       work.service, work.user.username,
-                                                       work.status)
-            else:
-                string_to = '%s\t%s\t%s\t%s\t%s\n' % (work.start, work.stop,
-                                                      work.service, "none", work.status)
             rocket = RocketChat(current_app.config['ROCKET_USER'],
                                 current_app.config['ROCKET_PASS'],
                                 server_url=current_app.config['ROCKET_URL'])
@@ -1255,6 +1325,9 @@ def work_edit():
                                  string_from, string_to, current_user.username),
                                  channel=current_app.config['ROCKET_CHANNEL']
                                  ).json()
+        flashmsg = _(f"Changed work: {string_from} to {string_to}.")
+        flash(flashmsg)
+
 
         return redirect(url_for('main.index'))
 
@@ -1265,12 +1338,14 @@ def work_edit():
 
         user_stats = users_stats(work.start, service)
         onstats = oncall_stats(work.start, service)
-        abstats = absence_stats(work.start, service)
+        abstats = absence_stats(work.start, work.stop, work.service)
+        users_working = users_work_within(work.start, work.stop, work.service)
+
         userlist = []
         userlist.extend([(0, f'- None -')])
 
         for su in work.service.users:
-            userlist.extend([(su.id, f'{su.username} work: {user_stats[su.username]} h oncall: {onstats[su.username]} absent:{abstats[su.username]}')])
+            userlist.extend([(su.id, f'{su.username} work: {user_stats[su.username]} h oncall: {onstats[su.username]} absent:{abstats[su.username]} shifts today: {users_working[su.username]}')])
         form.user.choices = userlist
 
 #        form.user.choices = [(su.id, su.username) for su in work.service.users]
@@ -1563,7 +1638,6 @@ def oncall_add():
                         stop=form.stop.data,
                         user_id=form.user.data,
                         service_id=form.service.data,
-                        color=service.color,
                         status=form.status.data)
 
         if form.absenceday.data != 0:
@@ -1792,7 +1866,6 @@ def oncall_add_month():
                 if not oncall_check_exist:
                     oncall = Oncall(start=dt_oncall_start,
                                     stop=dt_oncall_stop,
-                                    color=service.color,
                                     status=status)
                     print("New oncall, {}-{}".format(dt_oncall_start, dt_oncall_stop))
                     if status == "assigned":

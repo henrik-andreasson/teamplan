@@ -76,7 +76,11 @@
                     {% endset %}
                 {% endif %}
 
-                  <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" style="background: {{oc.color}}" class="list-group-item">
+                {% if current_user.theme == 'dark' %}
+                  <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" class="list-group-item p-3 rounded-3" style="background: {{oc.service.darkcolor}}">
+                {% else %}
+                  <a href="{{ url_for('main.oncall_edit', oncall=oc.id) }}" class="list-group-item p-3 rounded-3" style="background: {{oc.service.lightcolor}}">
+                {% endif %}
                     <div class="text-nowrap"><h4 class="list-group-item-heading">{{ _('%(username)s @ %(service)s', username=oc.user.username, service=oc.service.name) }}</h4></div>
                     <div class="text-nowrap"><p class="list-group-item-text">{{ _('%(start)s - %(stop)s', start=start, stop=stop) }} {{ help_wanted }}</p></div>
                   </a>
@@ -90,6 +94,7 @@
 <!--  work  -->
 
           {% for day in week %}
+            {% set allewi = day['extra_work_info'] %}
 
             <td>
 
@@ -140,13 +145,34 @@
                     {% endset %}
                 {% endif %}
 
+                {% set ewi = allewi[w.id] %}
+                {% if ewi['no_of_work'] > 1 %}
+                  {% set overbooked %}
+                    <img src="/static/toomuch.png" alt=">>"/>
+                  {% endset %}
+                {% endif %}
+
+                {% if ewi['absence'] > 0 %}
+                  {% set awayicon %}
+                    <img src="/static/away.png" alt="><"/>
+                  {% endset %}
+                {% endif %}
+
+
+                {% if ewi['oncall'] > 0 %}
+                    {% set userconcall %}
+                    <img src="/static/oncall.png" alt="oncall"/>
+                    {% endset %}
+                {% endif %}
+
                 {% if current_user.theme == 'dark' %}
                 <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item p-3 rounded-3" style="background: {{w.service.darkcolor}}">
                 {% else %}
                 <a href="{{ url_for('main.work_edit', work=w.id) }}" class="list-group-item p-3 rounded-3" style="background: {{w.service.lightcolor}}">
                 {% endif %}
+
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
-                                        username=w.user.username, service=w.service.name) }} {{help_wanted}}</h4></div>
+                                        username=w.user.username, service=w.service.name) }} {{help_wanted}} {{overbooked}} {{awayicon}} {{userconcall}}</h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
                                         hr_start=hr_start, hr_stop=hr_stop) }} </p></div>
 
