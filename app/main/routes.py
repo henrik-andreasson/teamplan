@@ -399,22 +399,22 @@ def index():
                     if w.user_id is None:
                         print(f'user is none, skipping')
                         continue
-                    extra_work_info[w.id]['no_of_work'] = Work.query.filter(((Work.user_id == w.user_id)
-                                                                      & (Work.start > dt_start)
+                    extra_work_info[w.id]['no_of_work'] = Work.query.filter(((Work.user_id == w.user_id)          # <---day--->
+                                                                      & (Work.start > dt_start)                   #  <--work->
                                                                       & (Work.stop < dt_stop)
                                                                       )).with_entities(func.count()).scalar()
 
                     extra_work_info[w.id]['oncall'] = Oncall.query.filter((Oncall.user_id == w.user_id)
                                                                 & (Oncall.service_id == w.service_id)                      #   < -- oncall -->
-                                                                & ((Oncall.start <= dt_start) & (Oncall.stop >= dt_stop)   #     <--wrk-->
-                                                                |  (Oncall.start >= dt_start) & (Oncall.start < dt_stop)   # <--wrk-->
-                                                                |  (Oncall.start < dt_start) & (Oncall.stop > dt_start)    #        <--wrk----->
+                                                                & ((Oncall.start <= w.start) & (Oncall.stop >= w.stop)   #     <--wrk-->
+                                                                |  (Oncall.start >= w.start) & (Oncall.start < w.stop)   # <--wrk-->
+                                                                |  (Oncall.start < w.start) & (Oncall.stop > w.start)    #        <--wrk----->
                                                                 )).with_entities(func.count()).scalar()
 
                     extra_work_info[w.id]['absence'] = Absence.query.filter((Absence.user_id == w.user_id)                         #   <---abs -->
-                                                                       & ((Absence.start <= dt_start) & (Absence.stop >= dt_stop)  #    <--work->
-                                                                       | (Absence.start  >= dt_start) & (Absence.start <= dt_stop) #  <-->
-                                                                       | (Absence.stop  >= dt_start) & (Absence.stop <= dt_stop)   #           <---->
+                                                                       & ((Absence.start <= w.start) & (Absence.stop >= w.stop)  #    <--work->
+                                                                       | (Absence.start  > w.start) & (Absence.start < w.stop) #  <-->
+                                                                       | (Absence.stop  > w.start) & (Absence.stop < w.stop)   #           <---->
                                                                  )).with_entities(func.count()).scalar()
 
                 if weekday not in working_days:
