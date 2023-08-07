@@ -5,8 +5,9 @@
 <nav class="navbar navbar-expand-md navbar-light fixed-top shadow-sm" style="background-color: #2e2f69;">
 {% endif %}
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{{url_for('main.index')}}">Team Planning</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <a class="navbar-brand fw-bold" href="{{url_for('main.index')}}">Team Plan</a>
+<!--          <img src="{{url_for('static',filename='logo.png')}}" width="128" height="128" alt="logo"/>
+    -->    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
         </button>
         {% if current_user.is_authenticated %}
