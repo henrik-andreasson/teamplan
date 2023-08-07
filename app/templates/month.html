@@ -172,7 +172,9 @@
                 {% endif %}
 
                   <div class="text-nowrap"><h4 class="list-group-item-heading"  id="text-nowrap">{{ _('%(username)s@%(service)s',
-                                        username=w.user.username, service=w.service.name) }} {{help_wanted}} {{overbooked}} {{awayicon}} {{userconcall}}</h4></div>
+                                        username=w.user.username, service=w.service.name) }} {{help_wanted}} {{overbooked}} {{awayicon}} {{userconcall}}
+                                        <img src="/static/1x32px.png"/>
+                                      </h4></div>
                   <div class="text-nowrap"><p class="list-group-item-text"  id="text-nowrap">{{ _('%(hr_start)s - %(hr_stop)s',
                                         hr_start=hr_start, hr_stop=hr_stop) }} </p></div>
 
